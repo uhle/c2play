@@ -211,7 +211,7 @@ void SubtitleDecoderElement::ProcessBuffer(AVPacketBufferSPTR buffer)
 
 				//for (int j = 0; j < AV_NUM_DATA_POINTERS; ++j)
 				//{
-				//	printf("Subtitle: pict: data[%d]=%p linesize=%d\n", j, rect->pict.data[j], rect->pict.linesize[j]);
+				//	printf("Subtitle: pict: data[%d]=%p linesize=%d\n", j, rect->data[j], rect->linesize[j]);
 				//}
 
 
@@ -225,8 +225,8 @@ void SubtitleDecoderElement::ProcessBuffer(AVPacketBufferSPTR buffer)
 							rect->w, rect->h);
 						unsigned int* imageData = (unsigned int*)image->Data();
 
-						unsigned char* pixData = rect->pict.data[0];
-						unsigned int* paletteData = (unsigned int*)rect->pict.data[1];
+						unsigned char* pixData = rect->data[0];
+						unsigned int* paletteData = (unsigned int*)rect->data[1];
 
 						for (int y = 0; y < rect->h; ++y)
 						{
