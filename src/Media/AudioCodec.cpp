@@ -125,39 +125,34 @@ void AudioCodecElement::ProcessBuffer(AVPacketBufferSPTR buffer, AVFrameBufferSP
 	//printf("Decoding frame (AVPacket=%p, size=%d).\n",
 	//	buffer->GetAVPacket(), buffer->GetAVPacket()->size);
 
-	int bytesDecoded = 0;
-	while (IsExecuting() && bytesDecoded < pkt->size)
+	int ret = 0;
+	while (IsExecuting())
 	{
-		int got_frame = 0;
-		int len = avcodec_decode_audio4(soundCodecContext,
-			decoded_frame,
-			&got_frame,
-			pkt);
-
-		//printf("avcodec_decode_audio4 len=%d\n", len);
-
-		if (len < 0)
+		if (pkt != nullptr)
 		{
-			// Report the error, but otherwise ignore it.				
-			char errmsg[1024] = { 0 };
-			av_strerror(len, errmsg, 1024);
+			ret = avcodec_send_packet(soundCodecContext, pkt);
+			pkt = nullptr;
 
-			Log("Error while decoding: %s\n", errmsg);
+			if (ret < 0 && ret != AVERROR(EAGAIN) && ret != AVERROR_EOF)
+			{
+				break;
+			}
+		}
 
+		ret = avcodec_receive_frame(soundCodecContext, decoded_frame);
+
+		if (ret < 0)
+		{
 			break;
 		}
 		else
 		{
-			bytesDecoded += len;
-		}
-
-		Log("decoded audio frame OK (len=%x, pkt.size=%x)\n", len, buffer->GetAVPacket()->size);
+			double pts = av_q2d(buffer->TimeBase()) * decoded_frame->pts;
+			Log("decoded audio frame OK (pts=%f, pkt_size=%x)\n", pts, decoded_frame->pkt_size);
 
 
-		// Convert audio to ALSA format
-		if (got_frame)
-		{
-			//printf("decoded audio frame pts=%f\n", pcmDataBuffer->TimeStamp());
+			// Convert audio to ALSA format
+			//printf("decoded audio frame pts=%f\n", pts);
 
 			// Copy out the PCM data because libav fills the frame
 			// with re-used data pointers.
@@ -290,6 +285,15 @@ void AudioCodecElement::ProcessBuffer(AVPacketBufferSPTR buffer, AVFrameBufferSP
 
 			audioOutPin->SendBuffer(pcmDataBuffer);
 		}
+	}
+
+	if (ret < 0 && ret != AVERROR(EAGAIN) && ret != AVERROR_EOF)
+	{
+		// Report the error, but otherwise ignore it.
+		char errmsg[AV_ERROR_MAX_STRING_SIZE] = { 0 };
+		av_strerror(ret, errmsg, AV_ERROR_MAX_STRING_SIZE);
+
+		Log("Error while decoding audio: %s\n", errmsg);
 	}
 }
 
