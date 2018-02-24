@@ -20,7 +20,7 @@ project "c2play"
 
    configuration "Release"
       flags { "Optimize" }
-      defines { "" }
+      defines { }
 
 project "c2play-x11"
    location (output)
@@ -39,4 +39,4 @@ project "c2play-x11"
 
    configuration "Release"
       flags { "Optimize" }
-      defines { "" }
+      defines { }

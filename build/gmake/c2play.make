@@ -45,7 +45,7 @@ ifeq ($(config),release)
   OBJDIR     = obj/Release/c2play
   TARGETDIR  = ../..
   TARGET     = $(TARGETDIR)/c2play
-  DEFINES   += -D
+  DEFINES   += 
   INCLUDES  += -I../../src/Media -I../../src/UI -I../../src/UI/Fbdev
   CPPFLAGS  += -MMD -MP $(DEFINES) $(INCLUDES)
   CFLAGS    += $(CPPFLAGS) $(ARCH) -O2 -std=c++11
