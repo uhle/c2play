@@ -398,11 +398,11 @@ class AVPacketBuffer : public GenericBuffer<AVPacket*>
 
 	static AVPacket* CreatePayload()
 	{
-		AVPacket* avpkt;
-		avpkt = (AVPacket*)calloc(1, sizeof(*avpkt));
-		
-		av_init_packet(avpkt);
-
+		AVPacket* avpkt = av_packet_alloc();
+		if (!avpkt)
+		{
+			throw Exception("av_packet_alloc failed.\n");
+		}
 
 		return avpkt;
 	}
@@ -425,9 +425,7 @@ public:
 	~AVPacketBuffer()
 	{
 		AVPacket* avpkt = Payload();
-
-		av_free_packet(avpkt);
-		free(avpkt);
+		av_packet_free(&avpkt);
 	}
 
 
@@ -461,11 +459,7 @@ public:
 	void Reset()
 	{
 		AVPacket* avpkt = Payload();
-
-		av_free_packet(avpkt);
-		av_init_packet(avpkt);
-		avpkt->data = NULL;
-		avpkt->size = 0;
+		av_packet_unref(avpkt);
 
 		time_base.num = 1;
 		time_base.den = 1;
