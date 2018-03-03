@@ -280,9 +280,11 @@ void AudioCodecElement::ProcessBuffer(AVPacketBufferSPTR buffer, AVFrameBufferSP
 				}
 
 				int channelCount = std::min(DOWNMIX_MAX_CHANNELS, decoded_frame->channels);
+				PcmData* pcmData = pcmDataBuffer->GetPcmData();
+				pcmData->Channels = channelCount;
+
 				for (int i = 0; i < channelCount; ++i)
 				{
-					PcmData* pcmData = pcmDataBuffer->GetPcmData();
 					memcpy(pcmData->Channel[i], channels[i], pcmData->ChannelSize);
 				}
 			}

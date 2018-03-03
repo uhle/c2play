@@ -350,11 +350,15 @@ public:
 			}
 		}
 	}
+
 	~PcmDataBuffer()
 	{
 		for (int i = 0; i < PcmData::MAX_CHANNELS; ++i)
 		{
-			free(pcmData.Channel[i]);
+			if (pcmData.Channel[i] != nullptr)
+			{
+				free(pcmData.Channel[i]);
+			}
 		}
 	}
 
