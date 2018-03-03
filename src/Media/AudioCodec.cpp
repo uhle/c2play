@@ -27,6 +27,10 @@ void AudioCodecElement::SetupCodec()
 		soundCodec = avcodec_find_decoder(AV_CODEC_ID_AAC);
 		break;
 
+	case AudioFormatEnum::AacLatm:
+		soundCodec = avcodec_find_decoder(AV_CODEC_ID_AAC_LATM);
+		break;
+
 	case AudioFormatEnum::Ac3:
 		soundCodec = avcodec_find_decoder(AV_CODEC_ID_AC3);
 		break;

@@ -260,6 +260,12 @@ void MediaSourceElement::SetupPins()
 							info->Format = AudioFormatEnum::Aac;
 						break;
 
+					case AV_CODEC_ID_AAC_LATM:
+						printf("stream #%d - AUDIO/AAC_LATM\n", i);
+						if (info)
+							info->Format = AudioFormatEnum::AacLatm;
+						break;
+
 					case AV_CODEC_ID_AC3:
 						printf("stream #%d - AUDIO/AC3\n", i);
 						if (info)

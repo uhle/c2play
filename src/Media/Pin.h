@@ -62,6 +62,7 @@ enum class AudioFormatEnum
 	Mpeg2Layer3,
 	Ac3,
 	Aac,
+	AacLatm,
 	Dts,
 	WmaPro,
 	DolbyTrueHD,
