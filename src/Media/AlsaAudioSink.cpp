@@ -213,7 +213,7 @@ void AlsaAudioSinkElement::ProcessBuffer(PcmDataBufferSPTR pcmBuffer)
 			if (pcmData->Channels > 2)
 			{
 				// Downmix
-				const float CENTER_WEIGHT = 0.1666666666666667f;
+				const float CENTER_WEIGHT = 0.3333333333333333f;
 
 				left = (leftSamples[i] * (1.0f - CENTER_WEIGHT)) + (centerSamples[i] * CENTER_WEIGHT);
 				right = (rightSamples[i] * (1.0f - CENTER_WEIGHT)) + (centerSamples[i] * CENTER_WEIGHT);
