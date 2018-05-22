@@ -103,7 +103,7 @@ void AudioCodecElement::SetupCodec()
 	soundCodecContext->sample_rate = sampleRate;
 	//soundCodecContext->sample_fmt = AV_SAMPLE_FMT_S16P; //AV_SAMPLE_FMT_FLTP; //AV_SAMPLE_FMT_S16P
 	soundCodecContext->request_sample_fmt = AV_SAMPLE_FMT_FLTP; // AV_SAMPLE_FMT_S16P; //AV_SAMPLE_FMT_FLTP;
-	soundCodecContext->request_channel_layout = AV_CH_LAYOUT_STEREO;
+	soundCodecContext->request_channel_layout = AV_CH_LAYOUT_STEREO | AV_CH_FRONT_CENTER;
 
 	if (info->ExtraData)
 	{
