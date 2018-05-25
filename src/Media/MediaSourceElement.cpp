@@ -557,30 +557,30 @@ void MediaSourceElement::DoWork()
 		//printf("MediaElement (%s) DoWork availableBuffers.TryPop=true.\n", Name().c_str());
 
 		AVPacketBufferPTR buffer = std::static_pointer_cast<AVPacketBuffer>(freeBuffer);
+		int ret = av_read_frame(ctx, buffer->GetAVPacket());
 
-		if (av_read_frame(ctx, buffer->GetAVPacket()) < 0)
+		if (ret < 0)
 		{
-			// End of file
-
 			// Free the memory allocated to the buffers by libav
 			buffer->Reset();
 			availableBuffers.Push(buffer);
 			//Wake();
 
-			// Send all Output Pins an EOS buffer
+			// End of file
+			if (ret == AVERROR_EOF)
 			{
+				// Send all Output Pins an EOS buffer
 				for (int i = 0; i < Outputs()->Count(); ++i)
 				{
 					MarkerBufferSPTR eosBuffer = std::make_shared<MarkerBuffer>(shared_from_this(), MarkerEnum::EndOfStream);
 					Outputs()->Item(i)->SendBuffer(eosBuffer);
 				}
+
+				//SetExecutionState(ExecutionStateEnum::Idle);
+				SetState(MediaState::Pause);
 			}
 
-			//SetExecutionState(ExecutionStateEnum::Idle);
-			SetState(MediaState::Pause);
-
 			//printf("MediaElement (%s) DoWork av_read_frame failed.\n", Name().c_str());
-			//break;
 		}
 		else
 		{
