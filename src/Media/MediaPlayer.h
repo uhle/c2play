@@ -48,7 +48,7 @@ class MediaPlayer
 public:
 
 	double Position() const;
-	
+	double StartTime() const;
 	double Duration() const;
 
 	MediaState State() const;

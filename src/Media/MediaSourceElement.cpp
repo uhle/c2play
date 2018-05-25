@@ -84,6 +84,9 @@ void MediaSourceElement::SetupPins()
 	}
 
 
+	startTime = ctx->start_time / (double)AV_TIME_BASE;
+	printf("Start time: %f\n", startTime);
+
 	duration = ctx->duration / (double)AV_TIME_BASE;
 	printf("Duration: %f\n", duration);
 

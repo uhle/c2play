@@ -514,8 +514,8 @@ seek:
 		{
 			osd->SetDuration(mediaPlayer->Duration());
 
-			/*double currentTime = mediaPlayer->Position();*/
-			osd->SetCurrentTimeStamp(currentTime);
+			double elapsedTime = currentTime - mediaPlayer->StartTime();
+			osd->SetElapsedTime(elapsedTime);
 
 			if (isFbdev)
 			{

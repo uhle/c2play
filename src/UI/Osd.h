@@ -35,7 +35,7 @@ class Osd
 	//Texture2DSPTR backgroundTexture;
 	CompositorSPTR compositor;
 	double duration = 0;
-	double currentTimeStamp = 0;
+	double elapsedTime = 0;
 	//bool showProgress = false;
 	//bool needsRedraw = true;
 	SpriteSPTR backgroundSprite;
@@ -58,15 +58,15 @@ public:
 		}
 	}
 
-	double CurrentTimeStamp() const
+	double ElapsedTime() const
 	{
-		return currentTimeStamp;
+		return elapsedTime;
 	}
-	void SetCurrentTimeStamp(double value)
+	void SetElapsedTime(double value)
 	{
-		if (value != currentTimeStamp)
+		if (value != elapsedTime)
 		{
-			currentTimeStamp = value;
+			elapsedTime = value;
 			//if (showProgress)
 			//{
 			//	needsRedraw = true;

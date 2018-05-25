@@ -89,6 +89,7 @@ class MediaSourceElement : public Element
 	EventListenerSPTR<EventArgs> bufferReturnedListener;
 
 	uint64_t lastPts = 0;
+	double startTime = 0;
 	double duration = -1;
 
 
@@ -102,6 +103,11 @@ class MediaSourceElement : public Element
 public:
 
 	const ChapterListSPTR Chapters() const;
+
+	double StartTime() const
+	{
+		return startTime;
+	}
 
 	double Duration() const
 	{

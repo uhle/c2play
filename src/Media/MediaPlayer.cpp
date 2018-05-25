@@ -38,6 +38,18 @@ double MediaPlayer::Position() const
 	return result;
 }
 
+double MediaPlayer::StartTime() const
+{
+	if (source)
+	{
+		return source->StartTime();
+	}
+	else
+	{
+		return 0;
+	}
+}
+
 double MediaPlayer::Duration() const
 {
 	if (source)

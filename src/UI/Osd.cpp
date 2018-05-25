@@ -134,7 +134,7 @@ Osd::Osd(CompositorSPTR compositor)
 //
 //			if (duration > 0)
 //			{
-//				float percentComplete = currentTimeStamp / duration;
+//				float percentComplete = elapsedTime / duration;
 //				barRectangle.Width *= percentComplete;
 //
 //				quadBatch->AddQuad(texture,
@@ -189,7 +189,7 @@ void Osd::Show()
 	{
 		Rectangle progressRectangle = barRectangle;
 
-		float percentComplete = currentTimeStamp / duration;
+		float percentComplete = elapsedTime / duration;
 		progressRectangle.Width *= percentComplete;
 	
 		progressSprite->SetDestinationRect(progressRectangle);
