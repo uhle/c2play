@@ -71,8 +71,8 @@ class AmlVideoSinkClockInPin : public InPin
 		double driftFrames = drift * frameRate;
 
 		// To minimize clock jitter, only adjust the clock if it
-		// deviates more than +/- 2 frames
-		if (driftFrames >= 2.0 || driftFrames <= -2.0)
+		// deviates more than +/- 100 milliseconds
+		if (drift > 0.1 || drift < -0.1)
 		{
 			//if (pts > 0)
 			{
