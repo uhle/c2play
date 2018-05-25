@@ -75,6 +75,10 @@ void AudioCodecElement::SetupCodec()
 		soundCodec = avcodec_find_decoder(AV_CODEC_ID_FLAC);
 		break;
 
+	case AudioFormatEnum::PcmS16LE:
+		soundCodec = avcodec_find_decoder(AV_CODEC_ID_PCM_S16LE);
+		break;
+
 	case AudioFormatEnum::PcmS24LE:
 		soundCodec = avcodec_find_decoder(AV_CODEC_ID_PCM_S24LE);
 		break;

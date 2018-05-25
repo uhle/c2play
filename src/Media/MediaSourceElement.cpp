@@ -323,6 +323,12 @@ void MediaSourceElement::SetupPins()
 							info->Format = AudioFormatEnum::Flac;
 						break;
 
+					case AV_CODEC_ID_PCM_S16LE:
+						printf("stream #%d - AUDIO/PCM_S16LE\n", i);
+						if (info)
+							info->Format = AudioFormatEnum::PcmS16LE;
+						break;
+
 					case AV_CODEC_ID_PCM_S24LE:
 						printf("stream #%d - AUDIO/PCM_S24LE\n", i);
 						if (info)

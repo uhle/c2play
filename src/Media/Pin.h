@@ -71,6 +71,7 @@ enum class AudioFormatEnum
 	Vorbis,
 	PcmDvd,
 	Flac,
+	PcmS16LE,
 	PcmS24LE
 };
 
