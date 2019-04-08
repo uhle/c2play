@@ -1,6 +1,7 @@
 Install dependencies:
 	sudo apt install libasound2-dev libavformat-dev libass-dev
-and (if necessary)
+
+Additional dependencies for X11:
 	sudo apt install libx11-dev
 
 Compile:
