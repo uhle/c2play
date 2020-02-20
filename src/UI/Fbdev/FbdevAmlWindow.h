@@ -93,7 +93,7 @@ public:
 			fd,
 			0);
 
-		for (int i = 0; i < fixed_info.smem_len / sizeof(int); ++i)
+		for (unsigned int i = 0; i < fixed_info.smem_len / sizeof(int); ++i)
 		{
 			framebuffer[i] = 0x70ff0000;	//ARGB
 			framebuffer[i] = 0x00000000;	//ARGB
@@ -194,5 +194,6 @@ public:
 
 	virtual bool ProcessMessages() override
 	{
+		return true;
 	}
 };
