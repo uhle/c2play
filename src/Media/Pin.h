@@ -192,11 +192,11 @@ class Pin : public std::enable_shared_from_this<Pin>
 
 
 protected:
-	Pin(PinDirectionEnum direction, ElementWPTR owner, PinInfoSPTR info)
+	Pin(PinDirectionEnum direction, const ElementWPTR& owner, const PinInfoSPTR& info)
 		: Pin(direction, owner, info, "Pin")
 	{
 	}
-	Pin(PinDirectionEnum direction, ElementWPTR owner, PinInfoSPTR info, std::string name)
+	Pin(PinDirectionEnum direction, const ElementWPTR& owner, const PinInfoSPTR& info, const std::string& name)
 		: direction(direction), owner(owner), info(info), name(name)
 	{
 		if (owner.expired())
@@ -228,7 +228,7 @@ public:
 	{
 		return name;
 	}
-	void SetName(std::string value)
+	void SetName(const std::string& value)
 	{
 		name = value;
 	}
@@ -256,7 +256,7 @@ class PinCollection
 
 protected:
 
-	void Add(T value)
+	void Add(const T& value)
 	{
 		if (!value)
 			throw ArgumentNullException();
@@ -292,7 +292,7 @@ public:
 
 	void Flush()
 	{
-		for (auto pin : pins)
+		for (const auto& pin : pins)
 		{
 			pin->Flush();
 		}
@@ -300,7 +300,7 @@ public:
 
 	T FindFirst(MediaCategoryEnum category)
 	{
-		for (auto item : pins)
+		for (const auto& item : pins)
 		{
 			if (item->Info()->Category() == category)
 			{
@@ -321,7 +321,7 @@ public:
 		//	throw ArgumentOutOfRangeException();
 
 		int count = 0;
-		for (auto item : pins)
+		for (const auto& item : pins)
 		{
 			if (item->Info()->Category() == category)
 			{

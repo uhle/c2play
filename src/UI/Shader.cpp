@@ -76,7 +76,7 @@ ShaderSPTR Shader::CreateFromSource(ShaderTypeEnum shaderType, const char* sourc
 
 
 
-GlslProgram::GlslProgram(ShaderSPTR vertexShader, ShaderSPTR fragmentShader)
+GlslProgram::GlslProgram(const ShaderSPTR& vertexShader, const ShaderSPTR& fragmentShader)
 	: vertexShader(vertexShader), fragmentShader(fragmentShader)
 {
 	if (!vertexShader)

@@ -33,13 +33,13 @@ class BufferEventArgs : public EventArgs
 
 
 public:
-	BufferSPTR Buffer() const
+	const BufferSPTR& Buffer() const
 	{
 		return buffer;
 	}
 
 
-	BufferEventArgs(BufferSPTR buffer)
+	BufferEventArgs(const BufferSPTR& buffer)
 		: buffer(buffer)
 	{
 	}
@@ -65,7 +65,7 @@ class OutPin : public Pin
 
 protected:
 
-	void AddAvailableBuffer(BufferSPTR buffer);
+	void AddAvailableBuffer(const BufferSPTR& buffer);
 	virtual void DoWork();
 
 
@@ -78,21 +78,21 @@ public:
 	}
 
 
-	OutPin(ElementWPTR owner, PinInfoSPTR info);
+	OutPin(const ElementWPTR& owner, const PinInfoSPTR& info);
 
 	virtual ~OutPin();
 
-	
+
 	void Wake();
 
 	bool TryGetAvailableBuffer(BufferSPTR* outValue);
 	bool TryPeekAvailableBuffer(BufferSPTR* buffer);
-	void SendBuffer(BufferSPTR buffer);
+	void SendBuffer(const BufferSPTR& buffer);
 	virtual void Flush() override;
 
 
-	void Connect(InPinSPTR sink);
-	void AcceptProcessedBuffer(BufferSPTR buffer);
+	void Connect(const InPinSPTR& sink);
+	void AcceptProcessedBuffer(const BufferSPTR& buffer);
 };
 
 //typedef std::shared_ptr<OutPin> OutPinSPTR;

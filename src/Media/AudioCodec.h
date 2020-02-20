@@ -47,7 +47,7 @@ class AudioCodecElement : public Element
 
 
 	void SetupCodec();
-	void ProcessBuffer(AVPacketBufferSPTR buffer, AVFrameBufferSPTR frame);
+	void ProcessBuffer(const AVPacketBufferSPTR& buffer, const AVFrameBufferSPTR& frame);
 
 
 public:

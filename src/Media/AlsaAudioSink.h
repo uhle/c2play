@@ -69,7 +69,7 @@ class AlsaAudioSinkElement : public Element
 
 	void SetupAlsa(int frameSize);
 
-	void ProcessBuffer(PcmDataBufferSPTR pcmBuffer);
+	void ProcessBuffer(const PcmDataBufferSPTR& pcmBuffer);
 
 public:
 

@@ -77,7 +77,7 @@ void  InPin::WorkThread()
 	}
 
 
-	InPin::InPin(ElementWPTR owner, PinInfoSPTR info)
+	InPin::InPin(const ElementWPTR& owner, const PinInfoSPTR& info)
 		: Pin(PinDirectionEnum::In, owner, info)
 	{
 	}
@@ -100,7 +100,7 @@ void  InPin::WorkThread()
 		return filledBuffers.TryPeek(buffer);
 	}
 
-	void InPin::PushProcessedBuffer(BufferSPTR buffer)
+	void InPin::PushProcessedBuffer(const BufferSPTR& buffer)
 	{
 		processedBuffers.Push(buffer);
 	}
@@ -139,7 +139,7 @@ void  InPin::WorkThread()
 
 
 
-	void InPin::AcceptConnection(OutPinSPTR source)
+	void InPin::AcceptConnection(const OutPinSPTR& source)
 	{
 		if (!source)
 			throw ArgumentNullException();
@@ -169,7 +169,7 @@ void  InPin::WorkThread()
 		parent->Log("InPin::AcceptConnection completed\n");
 	}
 
-	void InPin::Disconnect(OutPinSPTR source)
+	void InPin::Disconnect(const OutPinSPTR& source)
 	{
 		OutPinSPTR safeSource = this->source;
 
@@ -204,7 +204,7 @@ void  InPin::WorkThread()
 		parent->Log("InPin::Disconnect completed\n");
 	}
 
-	void InPin::ReceiveBuffer(BufferSPTR buffer)
+	void InPin::ReceiveBuffer(const BufferSPTR& buffer)
 	{
 		if (!buffer)
 			throw ArgumentNullException();

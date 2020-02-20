@@ -42,13 +42,13 @@ void OutPin::WorkThread()
 }
 
 
-OutPin::OutPin(ElementWPTR owner, PinInfoSPTR info)
+OutPin::OutPin(const ElementWPTR& owner, const PinInfoSPTR& info)
 	: Pin(PinDirectionEnum::Out, owner, info)
 {
 }
 
 
-void OutPin::AddAvailableBuffer(BufferSPTR buffer)
+void OutPin::AddAvailableBuffer(const BufferSPTR& buffer)
 {
 	if (!buffer)
 		throw ArgumentNullException();
@@ -81,7 +81,7 @@ bool OutPin::TryPeekAvailableBuffer(BufferSPTR* buffer)
 	return availableBuffers.TryPeek(buffer);
 }
 
-void OutPin::SendBuffer(BufferSPTR buffer)
+void OutPin::SendBuffer(const BufferSPTR& buffer)
 {
 	InPinSPTR pin = sink;
 
@@ -130,7 +130,7 @@ void OutPin::Wake()
 }
 
 
-void OutPin::Connect(InPinSPTR sink)
+void OutPin::Connect(const InPinSPTR& sink)
 {
 	if (!sink)
 		throw ArgumentNullException();
@@ -156,7 +156,6 @@ void OutPin::Connect(InPinSPTR sink)
 	this->sink = sink;
 	this->sink->AcceptConnection(thisPin);
 
-		
 	pinThread = std::make_shared<Thread>(std::function<void()>(std::bind(&OutPin::WorkThread, this)));
 	pinThread->Start();
 
@@ -164,7 +163,7 @@ void OutPin::Connect(InPinSPTR sink)
 	sinkMutex.Unlock();
 }
 
-void OutPin::AcceptProcessedBuffer(BufferSPTR buffer)
+void OutPin::AcceptProcessedBuffer(const BufferSPTR& buffer)
 {
 	if (!buffer)
 		throw ArgumentNullException();
@@ -174,7 +173,6 @@ void OutPin::AcceptProcessedBuffer(BufferSPTR buffer)
 	//	throw InvalidOperationException("The buffer being returned does not belong to this object.");
 	//}
 
-		
 	//availableBuffers.Push(buffer);
 	AddAvailableBuffer(buffer);
 

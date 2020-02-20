@@ -56,7 +56,7 @@ public:
 
 	bool IsEndOfStream();
 
-	const ChapterListSPTR Chapters() const;
+	const ChapterListSPTR& Chapters() const;
 
 	//void SetEgl(EGLDisplay eglDisplay, EGLSurface surface)
 	//{
@@ -68,7 +68,7 @@ public:
 
 
 
-	MediaPlayer(std::string url, std::string avOptions, CompositorSPTR compositor, int videoStream, int audioStream, int subtitleStream);
+	MediaPlayer(const std::string& url, const std::string& avOptions, const CompositorSPTR& compositor, int videoStream, int audioStream, int subtitleStream);
 	~MediaPlayer();
 
 

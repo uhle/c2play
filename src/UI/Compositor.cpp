@@ -18,7 +18,6 @@
 
 
 
-
 void Compositor::ClearDisplay()
 {
 	glClearColor(0.0f, 0, 0, 0.0f);
@@ -99,7 +98,7 @@ void Compositor::RenderThread()
 		}
 		else
 		{
-			for (SpriteSPTR sprite : sprites)
+			for (const SpriteSPTR& sprite : sprites)
 			{
 				if (sprite->IsDirty())
 				{
@@ -117,7 +116,7 @@ void Compositor::RenderThread()
 
 			// TODO: Cache texture
 			// TODO: Sort by Z Order back to front
-			for (SpriteSPTR sprite : sprites)
+			for (const SpriteSPTR& sprite : sprites)
 			{
 				Texture2DSPTR texture = std::make_shared<Texture2D>(sprite->Source()->Width(),
 					sprite->Source()->Height());
@@ -151,7 +150,7 @@ void Compositor::RenderThread()
 
 
 
-Compositor::Compositor(RenderContextSPTR context, int width, int height)
+Compositor::Compositor(const RenderContextSPTR& context, int width, int height)
 	: context(context), width(width), height(height)
 {
 	if (!context)
@@ -186,7 +185,7 @@ void Compositor::AddSprites(const SpriteList& additions)
 	mutex.Lock();
 
 	// TODO: handle duplicates
-	for (SpriteSPTR sprite : additions)
+	for (const SpriteSPTR& sprite : additions)
 	{
 		sprites.push_back(sprite);
 		isDirty = true;
@@ -201,7 +200,7 @@ void Compositor::RemoveSprites(const SpriteList& removals)
 	mutex.Lock();
 
 	// TODO: handle duplicates
-	for (SpriteSPTR sprite : removals)
+	for (const SpriteSPTR& sprite : removals)
 	{
 		bool found = false;
 		for (auto iter = sprites.begin(); iter != sprites.end(); ++iter)

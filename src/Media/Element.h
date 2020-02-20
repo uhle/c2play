@@ -105,7 +105,7 @@ protected:
 	Element();
 
 
-	
+
 	virtual void Initialize();
 	virtual void DoWork();
 	virtual void Idling();
@@ -115,9 +115,9 @@ protected:
 
 	void State_Executing();
 	void InternalWorkThread();
-	void AddInputPin(InPinSPTR pin);
+	void AddInputPin(const InPinSPTR& pin);
 	void ClearInputPins();
-	void AddOutputPin(OutPinSPTR pin);
+	void AddOutputPin(const OutPinSPTR& pin);
 	void ClearOutputPins();
 
 
@@ -129,7 +129,7 @@ public:
 	ExecutionStateEnum ExecutionState() const;
 	bool IsExecuting() const;
 	std::string Name() const;
-	void SetName(std::string name);
+	void SetName(const std::string& name);
 	bool LogEnabled() const;
 	void SetLogEnabled(bool value);
 	virtual MediaState State() const;

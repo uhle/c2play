@@ -135,13 +135,13 @@ bool MediaPlayer::IsEndOfStream()
 	return result;
 }
 
-const ChapterListSPTR MediaPlayer::Chapters() const
+const ChapterListSPTR& MediaPlayer::Chapters() const
 {
 	return source->Chapters();
 }
 
 
-MediaPlayer::MediaPlayer(std::string url, std::string avOptions, CompositorSPTR compositor, int videoStream, int audioStream, int subtitleStream)
+MediaPlayer::MediaPlayer(const std::string& url, const std::string& avOptions, const CompositorSPTR& compositor, int videoStream, int audioStream, int subtitleStream)
 	:url(url), avOptions(avOptions), compositor(compositor)
 {
 	if (!compositor)

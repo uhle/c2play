@@ -22,7 +22,7 @@
 #include <unistd.h>
 #include <vector>
 #include <alsa/asoundlib.h>
-#include <string> 
+#include <string>
 #include <queue>
 #include <pthread.h>
 #include <signal.h>
@@ -96,7 +96,7 @@ void GetDevices()
 		{
 			//printf("Filename: %s\n", epdf->d_name);
 			// std::cout << epdf->d_name << std::endl;
-			
+
 			std::string entryName = path + std::string(epdf->d_name);
 			//printf("Filename: %s\n", entryName.c_str());
 
@@ -128,7 +128,7 @@ void GetDevices()
 			}
 		}
 
-		for(auto device : devices)
+		for(const auto& device : devices)
 		{
 			printf("Device: %s\n", device.c_str());
 
@@ -343,7 +343,7 @@ int main(int argc, char** argv)
 
 #endif
 
-	
+
 	// Initialize libav
 	av_log_set_level(AV_LOG_VERBOSE);
 #if (LIBAVFORMAT_VERSION_MAJOR < 58)
@@ -355,7 +355,6 @@ int main(int argc, char** argv)
 
 
 
-	
 	WindowSPTR window;
 	OsdSPTR osd;
 	bool isFbdev = false;
@@ -370,7 +369,7 @@ int main(int argc, char** argv)
 	isFbdev = true;
 
 #endif
-	 
+
 	window->ProcessMessages();
 
 	RenderContextSPTR renderContext = std::make_shared<RenderContext>(window->EglDisplay(),
@@ -402,7 +401,7 @@ int main(int argc, char** argv)
 	mediaPlayer->Seek(optionStartPosition);
 	mediaPlayer->SetState(MediaState::Play);
 
-	
+
 	isRunning = true;
 	bool isPaused = false;
 
@@ -463,7 +462,7 @@ int main(int argc, char** argv)
 						mediaPlayer->SetState(MediaState::Pause);
 						osd->Show();
 					}
-					
+
 					isPaused = !isPaused;
 				}
 				break;
@@ -499,7 +498,7 @@ int main(int argc, char** argv)
 
 seek:
 					if (!isPaused)
-					{			
+					{
 						printf("Seeking from %f to %f.\n", currentTime, newTime);
 
 						mediaPlayer->Seek(newTime);

@@ -33,7 +33,7 @@ public:
 
 	~Event()
 	{
-		//for (auto item : listeners)
+		//for (const auto& item : listeners)
 		//{
 		//	item->InvalidateSource();
 		//}
@@ -47,7 +47,7 @@ public:
 
 		mutex.Lock();
 
-		for (auto item : listeners)
+		for (const auto& item : listeners)
 		{
 			auto sptr = item.lock();
 			if (sptr)
@@ -62,7 +62,7 @@ public:
 		mutex.Unlock();
 	}
 
-	void AddListener(EventListenerWPTR<T> listener)
+	void AddListener(const EventListenerWPTR<T>& listener)
 	{
 		auto listenerSPTR = listener.lock();
 
@@ -75,7 +75,7 @@ public:
 		mutex.Lock();
 
 		bool isDuplicate = false;
-		for (auto item : listeners)
+		for (const auto& item : listeners)
 		{
 			auto sptr = item.lock();
 			if (sptr == listenerSPTR)
@@ -94,7 +94,7 @@ public:
 		mutex.Unlock();
 	}
 
-	void RemoveListener(EventListenerSPTR<T> listener)
+	void RemoveListener(const EventListenerSPTR<T>& listener)
 	{
 		if (listener == nullptr)
 			throw ArgumentNullException();
@@ -102,7 +102,7 @@ public:
 
 		mutex.Lock();
 
-		for (auto item : listeners)
+		for (const auto& item : listeners)
 		{
 			auto sptr = item.lock();
 			if (sptr == listener)

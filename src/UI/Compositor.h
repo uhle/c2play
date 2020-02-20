@@ -40,7 +40,7 @@ class Source
 protected:
 
 public:
-	ImageSPTR Image()
+	const ImageSPTR& Image() const
 	{
 		return image;
 	}
@@ -59,10 +59,9 @@ public:
 	{
 		return isDirty;
 	}
-	
 
 
-	Source(ImageSPTR image)
+	Source(const ImageSPTR& image)
 		: image(image)
 	{
 		if (!image)
@@ -102,7 +101,7 @@ public:
 	{
 		return source;
 	}
-	void SetSource(SourceSPTR value)
+	void SetSource(const SourceSPTR& value)
 	{
 		source = value;
 		isDirty = true;
@@ -144,7 +143,7 @@ public:
 	}
 
 
-	Sprite(SourceSPTR source)
+	Sprite(const SourceSPTR& source)
 		: source(source)
 	{
 		if (!source)
@@ -155,7 +154,7 @@ public:
 			source->Image()->Width(), source->Image()->Height());
 	}
 
-	Sprite(SourceSPTR source, Rectangle desitinationRect)
+	Sprite(const SourceSPTR& source, Rectangle desitinationRect)
 		: source(source), destinationRect(desitinationRect)
 	{
 		if (!source)
@@ -211,23 +210,21 @@ public:
 	{
 		return context;
 	}
-	
+
 	int Width() const
 	{
 		return width;
 	}
-	
+
 	int Height() const
 	{
 		return height;
 	}
 
 
-
-	Compositor(RenderContextSPTR context, int width, int height);
+	Compositor(const RenderContextSPTR& context, int width, int height);
 	~Compositor();
 
-			
 
 	void AddSprites(const SpriteList& additions);
 	void RemoveSprites(const SpriteList& removals);

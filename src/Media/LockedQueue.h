@@ -44,7 +44,7 @@ public:
 
 
 
-	void Push(T value)
+	void Push(const T& value)
 	{
 		mutex.Lock();
 		queue.push(value);
@@ -98,7 +98,7 @@ public:
 	void Clear()
 	{
 		mutex.Lock();
-		
+
 		while (queue.size() > 0)
 		{
 			queue.pop();
@@ -156,7 +156,7 @@ public:
 	}
 
 
-	void Push(T value)
+	void Push(const T& value)
 	{
 		pthread_mutex_lock(&mutex);
 
@@ -172,7 +172,7 @@ public:
 		pthread_mutex_unlock(&mutex);
 	}
 
-	bool TryPush(T value)
+	bool TryPush(const T& value)
 	{
 		bool result;
 

@@ -90,7 +90,7 @@ public:
 
 
 	//Osd(EGLDisplay eglDisplay, EGLSurface surface);
-	Osd(CompositorSPTR compositor);
+	Osd(const CompositorSPTR& compositor);
 
 
 	//void Update(float elapsedTime);

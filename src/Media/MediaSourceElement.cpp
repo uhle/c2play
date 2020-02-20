@@ -428,13 +428,13 @@ void MediaSourceElement::SetupPins()
 
 
 
-const ChapterListSPTR MediaSourceElement::Chapters() const
+const ChapterListSPTR& MediaSourceElement::Chapters() const
 {
 	return chapters;
 }
 
 
-MediaSourceElement::MediaSourceElement(std::string url, std::string avOptions)
+MediaSourceElement::MediaSourceElement(const std::string& url, const std::string& avOptions)
 	: url(url)
 {
 	AVDictionary* options_dict = NULL;
@@ -524,7 +524,7 @@ void MediaSourceElement::Initialize()
 	bufferReturnedListener = std::make_shared<EventListener<EventArgs>>(
 		std::bind(&MediaSourceElement::outPin_BufferReturned, this, std::placeholders::_1, std::placeholders::_2));
 
-	for (auto item : streamList)
+	for (const auto& item : streamList)
 	{
 		if (item)
 		{
@@ -535,7 +535,7 @@ void MediaSourceElement::Initialize()
 
 	// Chapters
 	int index = 0;
-	for (auto& chapter : *chapters)
+	for (const auto& chapter : *chapters)
 	{
 		printf("Chapter[%02d] = '%s' : %f\n", index, chapter.Title.c_str(), chapter.TimeStamp);
 		++index;

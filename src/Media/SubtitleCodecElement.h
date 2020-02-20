@@ -48,7 +48,6 @@ class SubtitleDecoderElement : public Element
 	AVCodecContext* avcodecContext = nullptr;
 	AVSubtitle* avSubtitle = nullptr;
 	bool isFirstData = true;
-	
 
 	ASS_Library *ass_library;
 	ASS_Renderer *ass_renderer;
@@ -58,7 +57,7 @@ class SubtitleDecoderElement : public Element
 	static void static_msg_callback(int level, const char* fmt, va_list va, void *data);
 
 	void SetupCodec();
-	void ProcessBuffer(AVPacketBufferSPTR buffer);
+	void ProcessBuffer(const AVPacketBufferSPTR& buffer);
 
 
 public:
@@ -101,7 +100,7 @@ public:
 
 	inline bool operator!=(const SpriteEntry& rhs)
 	{
-		return !(*this == rhs); 
+		return !(*this == rhs);
 	}
 };
 
@@ -123,14 +122,14 @@ class SubtitleRenderElement : public Element, public virtual IClockSink
 	double currentTime = 0;
 
 
-	void timer_Expired(void* sender, const EventArgs& args);		
+	void timer_Expired(void* sender, const EventArgs& args);
 	void SetupCodec();
-	void ProcessBuffer(ImageListBufferSPTR buffer);
+	void ProcessBuffer(const ImageListBufferSPTR& buffer);
 
 public:
 
 	//SubtitleRenderElement(EGLDisplay eglDisplay, EGLSurface surface, EGLContext context);
-	SubtitleRenderElement(CompositorSPTR compositor);
+	SubtitleRenderElement(const CompositorSPTR& compositor);
 	virtual ~SubtitleRenderElement();
 
 

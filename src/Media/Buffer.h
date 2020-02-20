@@ -54,8 +54,8 @@ class Buffer
 
 protected:
 	//Buffer() {}
-	
-	Buffer(BufferTypeEnum type, ElementSPTR owner)
+
+	Buffer(BufferTypeEnum type, const ElementSPTR& owner)
 		: type(type), owner(owner)
 	{
 	}
@@ -107,14 +107,13 @@ class MarkerBuffer : public Buffer
 	MarkerEnum status;
 
 public:
-	
 	MarkerEnum Marker() const
 	{
 		return status;
 	}
-	
-	
-	MarkerBuffer(ElementSPTR owner, MarkerEnum status)
+
+
+	MarkerBuffer(const ElementSPTR& owner, MarkerEnum status)
 		: Buffer(BufferTypeEnum::Marker, owner),
 		status(status)
 	{
@@ -154,11 +153,11 @@ class GenericBuffer : public Buffer
 	T payload;
 
 protected:
-	//GenericBuffer(T payload)
+	//GenericBuffer(const T& payload)
 	//	: payload(payload)
 	//{
 	//}
-	GenericBuffer(BufferTypeEnum type, ElementSPTR owner, T payload)
+	GenericBuffer(BufferTypeEnum type, const ElementSPTR& owner, const T& payload)
 		: Buffer(type, owner), payload(payload)
 	{
 	}
@@ -167,7 +166,7 @@ protected:
 
 public:
 
-	virtual T Payload()
+	const T& Payload() const
 	{
 		return payload;
 	}
@@ -186,7 +185,7 @@ class ClockDataBuffer : public GenericBuffer<ClockData*>
 	ClockData clockData;
 
 public:
-	ClockDataBuffer(ElementSPTR owner)
+	ClockDataBuffer(const ElementSPTR& owner)
 		: GenericBuffer(BufferTypeEnum::ClockData, owner, &clockData)
 	{
 	}
@@ -279,10 +278,10 @@ class PcmDataBuffer : public GenericBuffer<PcmData*>
 		{
 		case PcmFormat::Int16:
 		case PcmFormat::Int32:
-		case PcmFormat::Float32:		
+		case PcmFormat::Float32:
 			result = true;
 			break;
-		
+
 		case PcmFormat::Int16Planes:
 		case PcmFormat::Int32Planes:
 		case PcmFormat::Float32Planes:
@@ -304,7 +303,7 @@ public:
 	//{
 	//}
 
-	PcmDataBuffer(ElementSPTR owner, PcmFormat format, int channels, int samples)
+	PcmDataBuffer(const ElementSPTR& owner, PcmFormat format, int channels, int samples)
 		: GenericBuffer(BufferTypeEnum::PcmData, owner, &pcmData)
 
 	{
@@ -419,7 +418,7 @@ public:
 	//	time_base.num = 1;
 	//	time_base.den = 1;
 	//}
-	AVPacketBuffer(ElementSPTR owner)
+	AVPacketBuffer(const ElementSPTR& owner)
 		: GenericBuffer(BufferTypeEnum::AVPacket, owner, CreatePayload())
 	{
 		time_base.num = 1;
@@ -498,7 +497,7 @@ class AVFrameBuffer : public GenericBuffer<AVFrame*>
 		AVFrame* frame = av_frame_alloc();
 		if (!frame)
 		{
-			throw Exception("av_frame_alloc failed.\n");			
+			throw Exception("av_frame_alloc failed.\n");
 		}
 
 		return frame;
@@ -511,7 +510,7 @@ public:
 	//	timeBase(timeBase)
 	//{
 	//}
-	AVFrameBuffer(ElementSPTR owner)
+	AVFrameBuffer(const ElementSPTR& owner)
 		: GenericBuffer(BufferTypeEnum::AVFrame, owner, CreatePayload())
 		//timeStamp(timeStamp)
 	{
@@ -561,14 +560,14 @@ typedef std::shared_ptr<AVFrameBuffer> AVFrameBufferSPTR;
 
 class Image;
 typedef std::shared_ptr<Image> ImageSPTR;
-	
+
 class ImageBuffer : public GenericBuffer<ImageSPTR>
 {
 	double timeStamp = -1;
 	int x = 0;
 	int y = 0;
 	double duration = 0;
-	
+
 
 public:
 
@@ -602,7 +601,7 @@ public:
 
 
 
-	ImageBuffer(ElementSPTR owner, ImageSPTR image)
+	ImageBuffer(const ElementSPTR& owner, const ImageSPTR& image)
 		: GenericBuffer(BufferTypeEnum::Image, owner, image)
 		//timeStamp(timeStamp)
 	{
@@ -652,7 +651,7 @@ class ImageListBuffer : public GenericBuffer<ImageListSPTR>
 public:
 
 
-	ImageListBuffer(ElementSPTR owner, ImageListSPTR imageList)
+	ImageListBuffer(const ElementSPTR& owner, const ImageListSPTR& imageList)
 		: GenericBuffer(BufferTypeEnum::ImageList, owner, imageList)
 		//timeStamp(timeStamp)
 	{

@@ -67,7 +67,7 @@ public:
 
 
 
-	InPin(ElementWPTR owner, PinInfoSPTR info);
+	InPin(const ElementWPTR& owner, const PinInfoSPTR& info);
 
 	virtual ~InPin();
 
@@ -75,17 +75,17 @@ public:
 	// From this element
 	bool TryGetFilledBuffer(BufferSPTR* buffer);
 	bool TryPeekFilledBuffer(BufferSPTR* buffer);
-	void PushProcessedBuffer(BufferSPTR buffer);
+	void PushProcessedBuffer(const BufferSPTR& buffer);
 	void ReturnProcessedBuffers();
 
 
 
 	// From other element
-	void AcceptConnection(OutPinSPTR source);
-	void Disconnect(OutPinSPTR source);
-	
-	void ReceiveBuffer(BufferSPTR buffer);
-	
+	void AcceptConnection(const OutPinSPTR& source);
+	void Disconnect(const OutPinSPTR& source);
+
+	void ReceiveBuffer(const BufferSPTR& buffer);
+
 	virtual void Flush() override;
 };
 
@@ -105,7 +105,7 @@ template <typename T>	//where T:PinInfo
 class GenericInPin : public InPin
 {
 public:
-	GenericInPin(ElementWPTR owner, std::shared_ptr<T> info)
+	GenericInPin(const ElementWPTR& owner, const std::shared_ptr<T>& info)
 		: InPin(owner, info)
 	{
 	}
@@ -121,7 +121,7 @@ public:
 class VideoInPin : public GenericInPin<VideoPinInfo>
 {
 public:
-	VideoInPin(ElementWPTR owner, VideoPinInfoSPTR info)
+	VideoInPin(const ElementWPTR& owner, const VideoPinInfoSPTR& info)
 		: GenericInPin(owner, info)
 	{
 	}
@@ -133,7 +133,7 @@ typedef std::shared_ptr<VideoInPin> VideoInPinSPTR;
 class AudioInPin : public GenericInPin<AudioPinInfo>
 {
 public:
-	AudioInPin(ElementWPTR owner, AudioPinInfoSPTR info)
+	AudioInPin(const ElementWPTR& owner, const AudioPinInfoSPTR& info)
 		: GenericInPin(owner, info)
 	{
 	}
@@ -145,7 +145,7 @@ typedef std::shared_ptr<AudioInPin> AudioInPinSPTR;
 class SubtitleInPin : public GenericInPin<SubtitlePinInfo>
 {
 public:
-	SubtitleInPin(ElementWPTR owner, SubtitlePinInfoSPTR info)
+	SubtitleInPin(const ElementWPTR& owner, const SubtitlePinInfoSPTR& info)
 		: GenericInPin(owner, info)
 	{
 	}

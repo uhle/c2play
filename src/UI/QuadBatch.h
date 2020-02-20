@@ -135,9 +135,8 @@ public:
 	virtual ~QuadBatch() {}
 
 
-	
 	void Clear();
-	void AddQuad(Texture2DSPTR texture, Rectangle destination, PackedColor color, float zDepth);
+	void AddQuad(const Texture2DSPTR& texture, Rectangle destination, PackedColor color, float zDepth);
 	void Draw();
 	void DrawOrdered();
 };

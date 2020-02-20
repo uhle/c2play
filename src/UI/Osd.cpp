@@ -44,7 +44,7 @@
 //
 //
 //	texture = std::make_shared<Texture2D>(1, 1);
-//	
+//
 //	unsigned int white = 0xffffffff;
 //	texture->WriteData(&white);
 //
@@ -67,7 +67,7 @@
 //
 //}
 
-Osd::Osd(CompositorSPTR compositor)
+Osd::Osd(const CompositorSPTR& compositor)
 	:compositor(compositor)
 {
 	if (!compositor)
@@ -78,7 +78,7 @@ Osd::Osd(CompositorSPTR compositor)
 	*data = 0xffffffff;	// white
 
 	SourceSPTR source = std::make_shared<Source>(image);
-	
+
 	backgroundSprite = std::make_shared<Sprite>(source);
 	backgroundSprite->SetColor(PackedColor(0x00, 0x00, 0x00, 0x7f));
 
@@ -175,7 +175,7 @@ void Osd::Show()
 
 
 	const float border = 75;
-	
+
 	Rectangle barRectangle = backgroundRectangle;
 	barRectangle.X += border;
 	barRectangle.Y += border;
@@ -183,7 +183,7 @@ void Osd::Show()
 	barRectangle.Height -= (border * 2);
 
 	barSprite->SetDestinationRect(barRectangle);
-	
+
 
 	if (duration > 0)
 	{
@@ -191,7 +191,7 @@ void Osd::Show()
 
 		float percentComplete = elapsedTime / duration;
 		progressRectangle.Width *= percentComplete;
-	
+
 		progressSprite->SetDestinationRect(progressRectangle);
 	}
 

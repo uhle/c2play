@@ -57,7 +57,7 @@ public:
 
 
 
-	InputDevice(std::string fileName);
+	InputDevice(const std::string& fileName);
 	~InputDevice();
 
 

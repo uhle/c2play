@@ -43,7 +43,7 @@ class AmlVideoSinkClockInPin : public InPin
 	double frameRate = 0;	// TODO just read info from Owner()
 
 
-	void ProcessClockBuffer(BufferSPTR buffer)
+	void ProcessClockBuffer(const BufferSPTR& buffer)
 	{
 		// truncate to 32bit
 		uint64_t pts = (uint64_t)(buffer->TimeStamp() * PTS_FREQ);
@@ -128,7 +128,7 @@ public:
 
 
 
-	AmlVideoSinkClockInPin(ElementWPTR owner, PinInfoSPTR info, AmlCodec* codecPTR)
+	AmlVideoSinkClockInPin(const ElementWPTR& owner, const PinInfoSPTR& info, AmlCodec* codecPTR)
 		: InPin(owner, info),
 		codecPTR(codecPTR)
 	{
@@ -192,7 +192,7 @@ typedef std::shared_ptr<AmlVideoSinkClockInPin> AmlVideoSinkClockInPinSPTR;
 //
 //public:
 //
-//	AmlVideoSinkClockOutPin(ElementWPTR owner, PinInfoSPTR info, codec_para_t* codecContextPtr)
+//	AmlVideoSinkClockOutPin(const ElementWPTR& owner, const PinInfoSPTR& info, codec_para_t* codecContextPtr)
 //		: OutPin(owner, info),
 //		codecContextPtr(codecContextPtr)
 //	{
@@ -266,7 +266,7 @@ class AmlVideoSinkElement : public Element
 
 	void timer_Expired(void* sender, const EventArgs& args);
 	void SetupHardware();
-	void ProcessBuffer(AVPacketBufferSPTR buffer);	
+	void ProcessBuffer(const AVPacketBufferSPTR& buffer);
 	bool SendCodecData(unsigned long pts, unsigned char* data, int length);
 
 

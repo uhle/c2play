@@ -36,7 +36,7 @@ public:
 		return sinks.end();
 	}
 
-	void Add(IClockSinkSPTR item)
+	void Add(const IClockSinkSPTR& item)
 	{
 		if (!item)
 			throw ArgumentNullException();
@@ -44,7 +44,7 @@ public:
 		sinks.push_back(item);
 	}
 
-	void Remove(IClockSinkSPTR item)
+	void Remove(const IClockSinkSPTR& item)
 	{
 		if (!item)
 			throw ArgumentNullException();

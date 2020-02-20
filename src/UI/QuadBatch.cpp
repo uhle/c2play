@@ -45,7 +45,7 @@ void QuadBatch::Clear()
 	quads.clear();
 }
 
-void QuadBatch::AddQuad(Texture2DSPTR texture, Rectangle destination, PackedColor color, float zDepth)
+void QuadBatch::AddQuad(const Texture2DSPTR& texture, Rectangle destination, PackedColor color, float zDepth)
 {
 	if (!texture)
 		throw ArgumentNullException();
@@ -120,7 +120,7 @@ void QuadBatch::AddQuad(Texture2DSPTR texture, Rectangle destination, PackedColo
 
 void QuadBatch::Draw()
 {
-	for (auto& iter : batches)
+	for (const auto& iter : batches)
 	{
 		program->SetDiffuseMap(iter.first);
 		program->Apply();
@@ -161,7 +161,7 @@ void QuadBatch::Draw()
 
 void QuadBatch::DrawOrdered()
 {
-	for (auto& quad : quads)
+	for (const auto& quad : quads)
 	{
 		program->SetDiffuseMap(quad.Texture);
 		program->Apply();

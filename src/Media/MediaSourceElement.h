@@ -79,13 +79,13 @@ class MediaSourceElement : public Element
 
 	std::string url;
 	AVFormatContext* ctx = nullptr;
-	
+
 	ThreadSafeQueue<BufferSPTR> availableBuffers;
 	std::vector<OutPinSPTR> streamList;
 	std::vector<uint64_t> streamNextPts;
 
 	ChapterListSPTR chapters = NewSPTR<ChapterList>();
-	
+
 	EventListenerSPTR<EventArgs> bufferReturnedListener;
 
 	uint64_t lastPts = 0;
@@ -102,7 +102,7 @@ class MediaSourceElement : public Element
 
 public:
 
-	const ChapterListSPTR Chapters() const;
+	const ChapterListSPTR& Chapters() const;
 
 	double StartTime() const
 	{
@@ -115,7 +115,7 @@ public:
 	}
 
 
-	MediaSourceElement(std::string url, std::string avOptions);
+	MediaSourceElement(const std::string& url, const std::string& avOptions);
 
 
 	virtual void Initialize() override;

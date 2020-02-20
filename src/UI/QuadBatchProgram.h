@@ -54,7 +54,7 @@ public:
 	{
 		return texture;
 	}
-	void SetDiffuseMap(Texture2DSPTR value)
+	void SetDiffuseMap(const Texture2DSPTR& value)
 	{
 		texture = value;
 	}

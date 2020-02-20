@@ -209,7 +209,7 @@ void AmlVideoSinkElement::SetupHardware()
 	//WriteToFile("/sys/module/amvdec_h265/parameters/dynamic_buf_num_margin", "16");
 }
 
-void AmlVideoSinkElement::ProcessBuffer(AVPacketBufferSPTR buffer)
+void AmlVideoSinkElement::ProcessBuffer(const AVPacketBufferSPTR& buffer)
 {
 	playPauseMutex.Lock();
 
@@ -318,7 +318,7 @@ void AmlVideoSinkElement::ProcessBuffer(AVPacketBufferSPTR buffer)
 			//amlCodec.SendData(0, pkt->data, pkt->size);
 			break;
 		}
-			
+
 		case VideoFormatEnum::Avc:
 		case VideoFormatEnum::Hevc:
 		{
@@ -459,7 +459,7 @@ bool AmlVideoSinkElement::SendCodecData(unsigned long pts, unsigned char* data, 
 			if (maxAttempts <= 0)
 			{
 				printf("codec_write max attempts exceeded.\n");
-				
+
 				amlCodec.Reset();
 				result = false;
 

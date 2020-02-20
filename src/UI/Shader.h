@@ -94,7 +94,7 @@ public:
 
 
 
-	GlslProgram(ShaderSPTR vertexShader, ShaderSPTR fragmentShader);
+	GlslProgram(const ShaderSPTR& vertexShader, const ShaderSPTR& fragmentShader);
 	virtual ~GlslProgram() {}
 
 

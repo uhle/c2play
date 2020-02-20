@@ -73,7 +73,7 @@ void AlsaAudioSinkElement::SetupAlsa(int frameSize)
 	snd_pcm_prepare(handle);
 }
 
-void AlsaAudioSinkElement::ProcessBuffer(PcmDataBufferSPTR pcmBuffer)
+void AlsaAudioSinkElement::ProcessBuffer(const PcmDataBufferSPTR& pcmBuffer)
 {
 	playPauseMutex.Lock();
 

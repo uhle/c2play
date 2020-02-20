@@ -278,7 +278,7 @@
 	}
 
 
-	void Element::AddInputPin(InPinSPTR pin)
+	void Element::AddInputPin(const InPinSPTR& pin)
 	{
 		inputs.Add(pin);
 	}
@@ -287,7 +287,7 @@
 		inputs.Clear();
 	}
 
-	void Element::AddOutputPin(OutPinSPTR pin)
+	void Element::AddOutputPin(const OutPinSPTR& pin)
 	{
 		outputs.Add(pin);
 	}
@@ -332,7 +332,7 @@
 	{
 		return name;
 	}
-	void Element::SetName(std::string name)
+	void Element::SetName(const std::string& name)
 	{
 		this->name = name;
 	}

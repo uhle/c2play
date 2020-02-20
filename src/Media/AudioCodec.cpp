@@ -123,7 +123,7 @@ void AudioCodecElement::SetupCodec()
 }
 
 
-void AudioCodecElement::ProcessBuffer(AVPacketBufferSPTR buffer, AVFrameBufferSPTR frame)
+void AudioCodecElement::ProcessBuffer(const AVPacketBufferSPTR& buffer, const AVFrameBufferSPTR& frame)
 {
 	AVPacket* pkt = buffer->GetAVPacket();
 	AVFrame* decoded_frame = frame->GetAVFrame();

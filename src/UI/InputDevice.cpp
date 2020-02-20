@@ -39,7 +39,7 @@ const std::string& InputDevice::Name() const
 }
 
 
-InputDevice::InputDevice(std::string fileName)
+InputDevice::InputDevice(const std::string& fileName)
 	: fileName(fileName)
 {
 	fd = open(fileName.c_str(), O_RDONLY);
@@ -166,7 +166,7 @@ void InputDevice::WorkThread()
 
 		if (count != sizeof(ev))
 		{
-			// EINTR will happen when threaded     
+			// EINTR will happen when threaded
 			if (count == -(EINTR))
 			{
 				printf("InputDevice: '%s' EINTR\n", name.c_str());
@@ -178,7 +178,7 @@ void InputDevice::WorkThread()
 			}
 
 			//if (count != -(EINTR))
-			//{				
+			//{
 			//	break;
 			//}
 		}
