@@ -385,7 +385,7 @@ void AlsaAudioSinkElement::ProcessBuffer(const PcmDataBufferSPTR& pcmBuffer)
 		less only if a signal or underrun occurred.
 		*/
 
-		void* ptr = data + (totalFramesWritten * alsa_channels * sizeof(short));
+		short* ptr = data + (totalFramesWritten * alsa_channels);
 		snd_pcm_sframes_t framesToWrite = pcmData->Samples - totalFramesWritten;
 
 		//printf("snd_pcm_writei: handle=%p, ptr=%p, frames=%ld\n", handle, ptr, framesToWrite);
