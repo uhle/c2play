@@ -46,8 +46,8 @@ void AlsaAudioSinkElement::SetupAlsa(int frameSize)
 
 	snd_pcm_hw_params_t *hw_params;
 	snd_pcm_sw_params_t *sw_params;
-	period_size = FRAME_SIZE * alsa_channels * sizeof(short);
-	buffer_size = AUDIO_FRAME_BUFFERCOUNT * period_size;
+	period_size = FRAME_SIZE;
+	buffer_size = AUDIO_FRAME_BUFFERCOUNT * FRAME_SIZE;
 
 
 	(snd_pcm_hw_params_malloc(&hw_params));
@@ -61,10 +61,11 @@ void AlsaAudioSinkElement::SetupAlsa(int frameSize)
 	(snd_pcm_hw_params(handle, hw_params));
 	snd_pcm_hw_params_free(hw_params);
 
+	printf("SetupAlsa: buffer_size=%lu, period_size=%lu\n", buffer_size, period_size);
 
 	snd_pcm_sw_params_malloc(&sw_params);
 	snd_pcm_sw_params_current(handle, sw_params);
-	snd_pcm_sw_params_set_start_threshold(handle, sw_params, buffer_size - period_size);
+	snd_pcm_sw_params_set_start_threshold(handle, sw_params, (buffer_size / period_size) * period_size);
 	snd_pcm_sw_params_set_avail_min(handle, sw_params, period_size);
 	snd_pcm_sw_params(handle, sw_params);
 	snd_pcm_sw_params_free(sw_params);
