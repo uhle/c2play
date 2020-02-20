@@ -28,8 +28,8 @@ void AlsaAudioSinkElement::SetupAlsa(int frameSize)
 	}
 
 
-	int err;
-	if ((err = snd_pcm_open(&handle, device, SND_PCM_STREAM_PLAYBACK, 0)) < 0) //SND_PCM_NONBLOCK
+	int err = snd_pcm_open(&handle, device, SND_PCM_STREAM_PLAYBACK, SND_PCM_NONBLOCK);
+	if (err < 0)
 	{
 		printf("snd_pcm_open error: %s\n", snd_strerror(err));
 		exit(EXIT_FAILURE);
@@ -411,9 +411,11 @@ void AlsaAudioSinkElement::ProcessBuffer(const PcmDataBufferSPTR& pcmBuffer)
 		/*
 		From ALSA docs:
 		If the blocking behaviour is selected and it is running, then
-		routine waits until all	requested frames are played or put to
+		routine waits until all requested frames are played or put to
 		the playback ring buffer. The returned number of frames can be
 		less only if a signal or underrun occurred.
+		If the non-blocking behaviour is selected, then routine does
+		not wait at all.
 		*/
 
 		short* ptr = data + (totalFramesWritten * alsa_channels);
@@ -439,6 +441,35 @@ void AlsaAudioSinkElement::ProcessBuffer(const PcmDataBufferSPTR& pcmBuffer)
 				// ALSA will never recover when the return result is 0
 				printf("snd_pcm_writei: unexpected zero (0) result.\n");
 				break;
+			}
+			else if (frames == -EAGAIN)
+			{
+				snd_pcm_state_t state = snd_pcm_state(handle);
+
+				if (state == SND_PCM_STATE_RUNNING)
+				{
+					//printf("snd_pcm_wait: handle=%p, timeout=-1\n", handle);
+					int err = snd_pcm_wait(handle, -1);
+					//printf("snd_pcm_wait: returned err=%d\n", err);
+
+					if (err < 0)
+					{
+						printf("snd_pcm_wait failed: %s\n", snd_strerror(err));
+						break;
+					}
+				}
+				else if (state == SND_PCM_STATE_PREPARED)
+				{
+					//printf("snd_pcm_start: handle=%p\n", handle);
+					int err = snd_pcm_start(handle);
+					//printf("snd_pcm_start: returned err=%d\n", err);
+
+					if (err < 0)
+					{
+						printf("snd_pcm_start failed: %s\n", snd_strerror(err));
+						break;
+					}
+				}
 			}
 			else
 			{
