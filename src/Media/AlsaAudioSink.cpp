@@ -389,6 +389,12 @@ void AlsaAudioSinkElement::ProcessBuffer(const PcmDataBufferSPTR& pcmBuffer)
 		short* ptr = data + (totalFramesWritten * alsa_channels);
 		snd_pcm_sframes_t framesToWrite = pcmData->Samples - totalFramesWritten;
 
+		// Do not attempt to write more frames than in one period at once.
+		if (framesToWrite - period_size > 0)
+		{
+			framesToWrite = period_size;
+		}
+
 		//printf("snd_pcm_writei: handle=%p, ptr=%p, frames=%ld\n", handle, ptr, framesToWrite);
 		snd_pcm_sframes_t frames = snd_pcm_writei(handle,
 			ptr,
