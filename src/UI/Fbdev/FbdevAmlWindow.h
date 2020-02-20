@@ -125,14 +125,14 @@ public:
 
 
 		// Egl
-		eglDisplay = Egl::Intialize(EGL_DEFAULT_DISPLAY);
+		eglDisplay = Egl::Initialize(EGL_DEFAULT_DISPLAY);
 
 		EGLConfig eglConfig = Egl::FindConfig(eglDisplay, 8, 8, 8, 8, 24, 8);
 		if (eglConfig == 0)
 			throw Exception("Compatible EGL config not found.");
 
 
-		EGLint windowAttr[] = {
+		EGLAttrib windowAttr[] = {
 			EGL_RENDER_BUFFER, EGL_BACK_BUFFER,
 			EGL_NONE };
 
@@ -141,7 +141,7 @@ public:
 		window.width = var_info.xres;
 		window.height = var_info.yres;
 
-		surface = eglCreateWindowSurface(eglDisplay, eglConfig, (NativeWindowType)&window, windowAttr);
+		surface = eglCreatePlatformWindowSurface(eglDisplay, eglConfig, &window, windowAttr);
 
 		if (surface == EGL_NO_SURFACE)
 		{

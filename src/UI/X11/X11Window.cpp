@@ -22,10 +22,10 @@
 
 //void X11AmlWindow::IntializeEgl()
 //{
-//	eglDisplay = eglGetDisplay(display);
+//	eglDisplay = eglGetPlatformDisplay(EGL_PLATFORM_X11_KHR, display, NULL);
 //	if (eglDisplay == EGL_NO_DISPLAY)
 //	{
-//		throw Exception("eglGetDisplay failed.\n");
+//		throw Exception("eglGetPlatformDisplay failed.\n");
 //	}
 //
 //
@@ -126,11 +126,11 @@
 //	eglGetConfigAttrib(eglDisplay, match, EGL_NATIVE_VISUAL_ID, xVisualOut);
 //
 //
-//	//EGLint windowAttr[] = {
+//	//EGLAttrib windowAttr[] = {
 //	//	EGL_RENDER_BUFFER, EGL_BACK_BUFFER,
 //	//	EGL_NONE };
 //
-//	//EGLSurface surface = eglCreateWindowSurface(display, match, (NativeWindowType)&window, windowAttr);
+//	//EGLSurface surface = eglCreatePlatformWindowSurface(display, match, &window, windowAttr);
 //
 //	//if (surface == EGL_NO_SURFACE)
 //	//{
@@ -157,16 +157,17 @@ X11AmlWindow::X11AmlWindow()
 
 
 	// Egl
-	eglDisplay = Egl::Intialize((NativeDisplayType)display);
+	eglDisplay = Egl::Initialize(EGL_PLATFORM_X11_KHR, display);
 
-	EGLConfig eglConfig = Egl::FindConfig(eglDisplay, 8, 8, 8, 8, 24, 8);	
+	EGLConfig eglConfig = Egl::FindConfig(eglDisplay, 8, 8, 8, 8, 24, 8);
 	if (eglConfig == 0)
 		throw Exception("Compatible EGL config not found.");
 
 
 	// Get the native visual id associated with the config
-	int xVisual;	
-	eglGetConfigAttrib(eglDisplay, eglConfig, EGL_NATIVE_VISUAL_ID, &xVisual);
+	EGLint xVisualId;
+	if (!eglGetConfigAttrib(eglDisplay, eglConfig, EGL_NATIVE_VISUAL_ID, &xVisualId))
+		throw Exception("Failed to get native visual id.");
 
 
 	// Window
@@ -174,7 +175,7 @@ X11AmlWindow::X11AmlWindow()
 
 
 	XVisualInfo visTemplate;
-	visTemplate.visualid = xVisual;
+	visTemplate.visualid = xVisualId;
 	//visTemplate.depth = 32;	// Alpha required
 
 
@@ -275,11 +276,11 @@ X11AmlWindow::X11AmlWindow()
 	//	throw Exception("open /dev/amvideo failed.");
 	//}
 
-	EGLint windowAttr[] = {
+	EGLAttrib windowAttr[] = {
 		EGL_RENDER_BUFFER, EGL_BACK_BUFFER,
 		EGL_NONE };
 
-	surface = eglCreateWindowSurface(eglDisplay, eglConfig, (NativeWindowType)xwin, windowAttr);
+	surface = eglCreatePlatformWindowSurface(eglDisplay, eglConfig, &xwin, windowAttr);
 
 	if (surface == EGL_NO_SURFACE)
 	{

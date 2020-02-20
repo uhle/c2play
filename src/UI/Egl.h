@@ -30,6 +30,7 @@ class Egl
 public:
 
 	static void CheckError();
-	static EGLDisplay Intialize(NativeDisplayType display);
+	static EGLDisplay Initialize(EGLNativeDisplayType display);
+	static EGLDisplay Initialize(EGLenum platform, void* display, const EGLAttrib* attribs = nullptr);
 	static EGLConfig FindConfig(EGLDisplay eglDisplay, int redBits, int greenBits, int blueBits, int alphaBits, int depthBits, int stencilBits);
 };

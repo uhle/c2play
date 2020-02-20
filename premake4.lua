@@ -16,11 +16,11 @@ project "c2play"
 
    configuration "Debug"
       flags { "Symbols" }
-      defines { "DEBUG" }
+      defines { "DEBUG", "EGL_NO_X11" }
 
    configuration "Release"
       flags { "Optimize" }
-      defines { }
+      defines { "EGL_NO_X11" }
 
 project "c2play-x11"
    location (output)

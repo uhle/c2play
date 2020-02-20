@@ -29,9 +29,8 @@ void Egl::CheckError()
 	}
 }
 
-EGLDisplay Egl::Intialize(NativeDisplayType display)
+static void EglInitialize(EGLDisplay eglDisplay)
 {
-	EGLDisplay eglDisplay = eglGetDisplay(display);
 	if (eglDisplay == EGL_NO_DISPLAY)
 	{
 		throw Exception("eglGetDisplay failed.\n");
@@ -54,6 +53,22 @@ EGLDisplay Egl::Intialize(NativeDisplayType display)
 	printf("EGL: Extensions=%s\n", eglQueryString(eglDisplay, EGL_EXTENSIONS));
 	printf("EGL: ClientExtensions=%s\n", eglQueryString(EGL_NO_DISPLAY, EGL_EXTENSIONS));
 	printf("\n");
+}
+
+EGLDisplay Egl::Initialize(EGLNativeDisplayType display)
+{
+	EGLDisplay eglDisplay = eglGetDisplay(display);
+
+	EglInitialize(eglDisplay);
+
+	return eglDisplay;
+}
+
+EGLDisplay Egl::Initialize(EGLenum platform, void* display, const EGLAttrib* attribs)
+{
+	EGLDisplay eglDisplay = eglGetPlatformDisplay(platform, display, attribs);
+
+	EglInitialize(eglDisplay);
 
 	return eglDisplay;
 }

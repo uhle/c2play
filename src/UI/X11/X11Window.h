@@ -29,6 +29,7 @@
 #include <X11/Xutil.h>
 
 #include <EGL/egl.h>
+#include <EGL/eglext.h>
 
 #include "Exception.h"
 #include "AmlWindow.h"
