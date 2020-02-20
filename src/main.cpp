@@ -346,7 +346,9 @@ int main(int argc, char** argv)
 	
 	// Initialize libav
 	av_log_set_level(AV_LOG_VERBOSE);
+#if (LIBAVFORMAT_VERSION_MAJOR < 58)
 	av_register_all();
+#endif
 	avformat_network_init();
 
 

@@ -99,8 +99,7 @@ void SubtitleDecoderElement::ProcessBuffer(AVPacketBufferSPTR buffer)
 		//AVFrame* frame = av_frame_alloc();
 	//avsubtitle_free (AVSubtitle *sub)
 
-	//avcodecContext->pkt_timebase = buffer->TimeBase();
-	av_codec_set_pkt_timebase(avcodecContext, buffer->TimeBase());
+	avcodecContext->pkt_timebase = buffer->TimeBase();
 	printf("buffer->TimeBase() = num=%u, den=%u\n", buffer->TimeBase().num, buffer->TimeBase().den);
 
 

@@ -213,7 +213,7 @@ void AudioCodecElement::ProcessBuffer(AVPacketBufferSPTR buffer, AVFrameBufferSP
 			if (buffer->GetAVPacket()->pts != AV_NOPTS_VALUE)
 			{
 				pcmDataBuffer->SetTimeStamp(
-					av_frame_get_best_effort_timestamp(frame->GetAVFrame()) *
+					frame->GetAVFrame()->best_effort_timestamp *
 					av_q2d(buffer->TimeBase()));
 			}
 			else
