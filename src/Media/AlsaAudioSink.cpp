@@ -326,21 +326,51 @@ void AlsaAudioSinkElement::ProcessBuffer(const PcmDataBufferSPTR& pcmBuffer)
 	snd_pcm_sframes_t delay;
 
 	//printf("snd_pcm_delay: handle=%p, &delay=%p\n", handle, &delay);
-	double adjust = 0;
 
 	if (snd_pcm_delay(handle, &delay) != 0)
 	{
 		printf("snd_pcm_delay failed.\n");
+
+		/*
+		Thus we have to guess the delay. Although we do not know any
+		additional latencies, the best we can do is to predict from
+		the fill level of the playback ring buffer. At least this is
+		closer to the truth than a zero delay.
+		*/
+		//printf("snd_pcm_avail_update: handle=%p\n", handle);
+		snd_pcm_sframes_t available_frames = snd_pcm_avail_update(handle);
+		//printf("snd_pcm_avail_update: returned available_frames=%ld\n", available_frames);
+
+		if (available_frames < 0)
+		{
+			printf("snd_pcm_avail_update failed: %s\n", snd_strerror(available_frames));
+
+			//printf("snd_pcm_recover: handle=%p, err=%ld, silent=1\n", handle, available_frames);
+			int err = snd_pcm_recover(handle, available_frames, 1);
+			//printf("snd_pcm_recover: returned err=%d\n", err);
+
+			if (err < 0)
+			{
+				printf("snd_pcm_recover failed: %s\n", snd_strerror(err));
+			}
+			else
+			{
+				printf("snd_pcm_recover\n");
+			}
+		}
+		else
+		{
+			delay = buffer_size - available_frames;
+		}
 	}
 	else
 	{
 		//printf("snd_pcm_delay: returned\n");
-
-		// The sample currently playing is previous in time to this frame,
-		// so adjust negatively.
-		adjust = -(delay / (double)sampleRate);
 	}
 
+	// The sample currently playing is previous in time to this frame,
+	// so adjust negatively.
+	double adjust = -((double)delay / (double)sampleRate);
 	//printf("ALSA: adjust=%f\n", adjust);
 
 	if (pcmBuffer->TimeStamp() > 0)
@@ -415,10 +445,18 @@ void AlsaAudioSinkElement::ProcessBuffer(const PcmDataBufferSPTR& pcmBuffer)
 				printf("snd_pcm_writei failed: %s\n", snd_strerror(frames));
 
 				//printf("snd_pcm_recover: handle=%p, err=%ld, silent=1\n", handle, frames);
-				snd_pcm_recover(handle, frames, 1);
-				//printf("snd_pcm_recover: returned\n");
+				int err = snd_pcm_recover(handle, frames, 1);
+				//printf("snd_pcm_recover: returned err=%d\n", err);
 
-				printf("snd_pcm_recover\n");
+				if (err < 0)
+				{
+					printf("snd_pcm_recover failed: %s\n", snd_strerror(err));
+					break;
+				}
+				else
+				{
+					printf("snd_pcm_recover\n");
+				}
 			}
 		}
 		else
