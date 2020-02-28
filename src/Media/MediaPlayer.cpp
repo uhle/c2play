@@ -72,6 +72,11 @@ void MediaPlayer::SetState(MediaState value)
 	{
 		state = value;
 
+		if (audioCodec)
+		{
+			audioCodec->SetState(state);
+		}
+
 		if (audioSink)
 		{
 			audioSink->SetState(state);
@@ -80,11 +85,6 @@ void MediaPlayer::SetState(MediaState value)
 		if (videoSink)
 		{
 			videoSink->SetState(state);
-		}
-
-		if (subtitleCodec)
-		{
-			subtitleCodec->SetState(state);
 		}
 
 		if (subtitleCodec)
