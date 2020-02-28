@@ -56,31 +56,37 @@ public:
 	{
 		bool result = false;
 
-		mutex.Lock();
-
-		if (queue.size() > 0)
+		if (outValue != nullptr && queue.size() > 0)
 		{
-			*outValue = std::move(queue.front());
-			queue.pop();
+			mutex.Lock();
 
-			result = true;
+			if (queue.size() > 0)
+			{
+				*outValue = std::move(queue.front());
+				queue.pop();
+
+				result = true;
+			}
+
+			mutex.Unlock();
 		}
-
-		mutex.Unlock();
 
 		return result;
 	}
 
 	void Clear()
 	{
-		mutex.Lock();
-
-		while (queue.size() > 0)
+		if (queue.size() > 0)
 		{
-			queue.pop();
-		}
+			mutex.Lock();
 
-		mutex.Unlock();
+			while (queue.size() > 0)
+			{
+				queue.pop();
+			}
+
+			mutex.Unlock();
+		}
 	}
 };
 
