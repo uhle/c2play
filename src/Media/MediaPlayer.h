@@ -73,6 +73,9 @@ public:
 
 
 
+	void AdjustVolume(int steps);
+	void ToggleMuteVolume();
+
 	void Seek(double timeStamp);
 };
 

@@ -1,6 +1,7 @@
 /*
 *
 * Copyright (C) 2016 OtherCrashOverride@users.noreply.github.com.
+* Copyright (C) 2020 Thomas Uhle <uhle@users.noreply.github.com>.
 * All rights reserved.
 *
 * This program is free software; you can redistribute it and/or modify
@@ -39,6 +40,8 @@ class AlsaAudioSinkElement : public Element
 
 	const int AUDIO_FRAME_BUFFERCOUNT = 8;
 	const char* device = "default"; //default   //plughw                     /* playback device */
+	const char* mixer_name = "Master";
+	const unsigned int mixer_index = 0;
 	const int alsa_channels = 2;
 
 	AVCodecID codec_id = AV_CODEC_ID_NONE;
@@ -49,6 +52,11 @@ class AlsaAudioSinkElement : public Element
 	double lastTimeStamp = -1;
 	bool canPause = true;
 	LockedQueue<PcmDataBufferPtr> pcmBuffers = LockedQueue<PcmDataBufferPtr>(128);
+
+	snd_mixer_t* mixer_handle = nullptr;
+	snd_mixer_elem_t* mixer_control = nullptr;
+	long minVolume = -1;
+	long maxVolume = -1;
 
 	bool isFirstData = true;
 	AudioFormatEnum audioFormat = AudioFormatEnum::Unknown;
@@ -68,6 +76,7 @@ class AlsaAudioSinkElement : public Element
 	ClockList clockSinks;
 
 	void SetupAlsa(int frameSize);
+	void SetupAlsaMixer();
 
 	void ProcessBuffer(const PcmDataBufferSPTR& pcmBuffer);
 
@@ -82,6 +91,9 @@ public:
 	{
 		return &clockSinks;
 	}
+
+	void AdjustVolume(int steps);
+	void ToggleMuteVolume();
 
 
 	virtual void Flush() override;

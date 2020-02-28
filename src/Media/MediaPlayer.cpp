@@ -265,6 +265,22 @@ MediaPlayer::~MediaPlayer()
 
 
 
+void MediaPlayer::AdjustVolume(int steps)
+{
+	if (audioSink)
+	{
+		audioSink->AdjustVolume(steps);
+	}
+}
+
+void MediaPlayer::ToggleMuteVolume()
+{
+	if (audioSink)
+	{
+		audioSink->ToggleMuteVolume();
+	}
+}
+
 void MediaPlayer::Seek(double timeStamp)
 {
 	source->SetState(MediaState::Pause);

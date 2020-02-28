@@ -425,11 +425,19 @@ int main(int argc, char** argv)
 				switch (keycode)
 				{
 				case KEY_HOME:	// odroid remote
-				case KEY_MUTE:
 				case KEY_MENU:
+					break;
+
+				case KEY_MUTE:
+					mediaPlayer->ToggleMuteVolume();
+					break;
 
 				case KEY_VOLUMEDOWN:
+					mediaPlayer->AdjustVolume(-5);
+					break;
+
 				case KEY_VOLUMEUP:
+					mediaPlayer->AdjustVolume(5);
 					break;
 
 				case KEY_POWER:	// odroid remote

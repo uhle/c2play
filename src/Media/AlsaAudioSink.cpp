@@ -1,6 +1,7 @@
 /*
 *
 * Copyright (C) 2016 OtherCrashOverride@users.noreply.github.com.
+* Copyright (C) 2020 Thomas Uhle <uhle@users.noreply.github.com>.
 * All rights reserved.
 *
 * This program is free software; you can redistribute it and/or modify
@@ -72,6 +73,74 @@ void AlsaAudioSinkElement::SetupAlsa(int frameSize)
 
 
 	snd_pcm_prepare(pcm_handle);
+}
+
+void AlsaAudioSinkElement::SetupAlsaMixer()
+{
+	int err = snd_mixer_open(&mixer_handle, 0);
+	if (err < 0)
+	{
+		printf("snd_mixer_open error: %s\n", snd_strerror(err));
+		exit(EXIT_FAILURE);
+	}
+
+	err = snd_mixer_attach(mixer_handle, device);
+	if (err < 0)
+	{
+		printf("snd_mixer_attach error: %s\n", snd_strerror(err));
+		exit(EXIT_FAILURE);
+	}
+
+	err = snd_mixer_selem_register(mixer_handle, nullptr, nullptr);
+	if (err < 0)
+	{
+		printf("snd_mixer_selem_register error: %s\n", snd_strerror(err));
+		exit(EXIT_FAILURE);
+	}
+
+	err = snd_mixer_load(mixer_handle);
+	if (err < 0)
+	{
+		printf("snd_mixer_load error: %s\n", snd_strerror(err));
+		exit(EXIT_FAILURE);
+	}
+
+
+	snd_mixer_selem_id_t* sid;
+	snd_mixer_selem_id_malloc(&sid);
+	snd_mixer_selem_id_set_name(sid, mixer_name);
+	snd_mixer_selem_id_set_index(sid, mixer_index);
+	mixer_control = snd_mixer_find_selem(mixer_handle, sid);
+	snd_mixer_selem_id_free(sid);
+
+	if (!mixer_control || !snd_mixer_selem_has_playback_volume(mixer_control))
+	{
+		if (!mixer_control)
+		{
+			printf("SetupAlsaMixer: Mixer control '%s' (%u) was not found.\n", mixer_name, mixer_index);
+		}
+		else
+		{
+			printf("SetupAlsaMixer: Mixer control '%s' (%u) has no playback volume.\n", mixer_name, mixer_index);
+		}
+
+		printf("WARNING: Volume control is not supported.\n");
+		snd_mixer_close(mixer_handle);
+		mixer_handle = nullptr;
+		mixer_control = nullptr;
+
+		return;
+	}
+
+
+	long left, right;
+	snd_mixer_selem_get_playback_volume(mixer_control, SND_MIXER_SCHN_FRONT_LEFT, &left);
+	snd_mixer_selem_get_playback_volume(mixer_control, SND_MIXER_SCHN_FRONT_RIGHT, &right);
+	snd_mixer_selem_get_playback_volume_range(mixer_control, &minVolume, &maxVolume);
+
+	double ratio = 100.0 / (double)(maxVolume - minVolume);
+	printf("SetupAlsaMixer: min=%ld, max=%ld, left=%ld (%.1f%%), right=%ld (%.1f%%)\n",
+	       minVolume, maxVolume, left, ratio * (double)(left - minVolume), right, ratio * (double)(right - minVolume));
 }
 
 void AlsaAudioSinkElement::ProcessBuffer(const PcmDataBufferSPTR& pcmBuffer)
@@ -525,6 +594,124 @@ double AlsaAudioSinkElement::Clock() const
 }
 
 
+void AlsaAudioSinkElement::AdjustVolume(int steps)
+{
+	if (steps == 0)
+		throw InvalidOperationException();
+
+	if (!mixer_control)
+		return;
+
+	long diam = maxVolume - minVolume;
+	long incr = (diam * steps + ((steps < 0) ? -50 : 50)) / 100;
+	long left, right;
+
+	int err = snd_mixer_selem_get_playback_volume(mixer_control, SND_MIXER_SCHN_FRONT_LEFT, &left);
+	if (err < 0)
+	{
+		printf("snd_mixer_selem_get_playback_volume(left channel) failed: %s\n", snd_strerror(err));
+		return;
+	}
+
+	err = snd_mixer_selem_get_playback_volume(mixer_control, SND_MIXER_SCHN_FRONT_RIGHT, &right);
+	if (err < 0)
+	{
+		printf("snd_mixer_selem_get_playback_volume(right channel) failed: %s\n", snd_strerror(err));
+		return;
+	}
+
+	left += incr;
+	right += incr;
+
+	if (steps < 0)
+	{
+		if (left < minVolume)
+		{
+			left = minVolume;
+		}
+		if (right < minVolume)
+		{
+			right = minVolume;
+		}
+	}
+	else
+	{
+		if (left > maxVolume)
+		{
+			left = maxVolume;
+		}
+		if (right > maxVolume)
+		{
+			right = maxVolume;
+		}
+	}
+
+	double ratio = 100.0 / (double)diam;
+	printf("AlsaAudioSinkElement: Adjust volume by %d%%: left=%ld (%.1f%%), right=%ld (%.1f%%)\n",
+	       steps, left, ratio * (double)(left - minVolume), right, ratio * (double)(right - minVolume));
+
+	err = snd_mixer_selem_set_playback_volume(mixer_control, SND_MIXER_SCHN_FRONT_LEFT, left);
+	if (err < 0)
+	{
+		printf("snd_mixer_selem_set_playback_volume(left channel) failed: %s\n", snd_strerror(err));
+	}
+
+	err = snd_mixer_selem_set_playback_volume(mixer_control, SND_MIXER_SCHN_FRONT_RIGHT, right);
+	if (err < 0)
+	{
+		printf("snd_mixer_selem_set_playback_volume(right channel) failed: %s\n", snd_strerror(err));
+	}
+}
+
+void AlsaAudioSinkElement::ToggleMuteVolume()
+{
+	if (!mixer_control || !snd_mixer_selem_has_playback_switch(mixer_control))
+	{
+		if (mixer_control)
+		{
+			printf("AlsaAudioSinkElement: Mixer control '%s' (%u) has no switch to mute/unmute.\n",
+			       snd_mixer_selem_get_name(mixer_control), snd_mixer_selem_get_index(mixer_control));
+		}
+
+		return;
+	}
+
+	int tmp = 0;
+	int err = snd_mixer_selem_get_playback_switch(mixer_control, SND_MIXER_SCHN_FRONT_LEFT, &tmp);
+	if (err < 0)
+	{
+		printf("snd_mixer_selem_get_playback_switch(left channel) failed: %s\n", snd_strerror(err));
+		return;
+	}
+
+	bool muted = !tmp;
+
+	if (!snd_mixer_selem_has_playback_switch_joined(mixer_control))
+	{
+		err = snd_mixer_selem_get_playback_switch(mixer_control, SND_MIXER_SCHN_FRONT_RIGHT, &tmp);
+		if (err < 0)
+		{
+			printf("snd_mixer_selem_get_playback_switch(right channel) failed: %s\n", snd_strerror(err));
+			return;
+		}
+
+		muted &= !tmp;
+
+		err = snd_mixer_selem_set_playback_switch(mixer_control, SND_MIXER_SCHN_FRONT_RIGHT, muted);
+		if (err < 0)
+		{
+			printf("snd_mixer_selem_set_playback_switch(right channel) failed: %s\n", snd_strerror(err));
+		}
+	}
+
+	err = snd_mixer_selem_set_playback_switch(mixer_control, SND_MIXER_SCHN_FRONT_LEFT, muted);
+	if (err < 0)
+	{
+		printf("snd_mixer_selem_set_playback_switch(left channel) failed: %s\n", snd_strerror(err));
+	}
+}
+
+
 void AlsaAudioSinkElement::Flush()
 {
 	Element::Flush();
@@ -598,10 +785,11 @@ void AlsaAudioSinkElement::DoWork()
 				//TODO: copy output pin info to input pin
 
 				//SetupAlsa();
+				SetupAlsaMixer();
 
 				isFirstData = false;
 
-				printf("AlsaAudioSinkElement: isFirstData changed.\n");
+				//printf("AlsaAudioSinkElement: isFirstData changed.\n");
 			}
 
 		}
@@ -658,6 +846,14 @@ void AlsaAudioSinkElement::Terminating()
 		snd_pcm_close(pcm_handle);
 
 		pcm_handle = nullptr;
+	}
+
+	if (mixer_handle)
+	{
+		snd_mixer_close(mixer_handle);
+
+		mixer_handle = nullptr;
+		mixer_control = nullptr;
 	}
 }
 
