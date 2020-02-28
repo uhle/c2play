@@ -53,15 +53,15 @@ void  InPin::WorkThread()
 
 		if (source)
 		{
-			BufferSPTR buffer;
+			BufferUPTR buffer;
 			while (processedBuffers.TryPop(&buffer))
 			{
-				source->AcceptProcessedBuffer(buffer);
+				source->AcceptProcessedBuffer(std::move(buffer));
 			}
 
 			while (filledBuffers.TryPop(&buffer))
 			{
-				source->AcceptProcessedBuffer(buffer);
+				source->AcceptProcessedBuffer(std::move(buffer));
 			}
 		}
 
@@ -90,19 +90,14 @@ void  InPin::WorkThread()
 		}
 	}
 
-	bool InPin::TryGetFilledBuffer(BufferSPTR* buffer)
+	bool InPin::TryGetFilledBuffer(BufferUPTR* buffer)
 	{
 		return filledBuffers.TryPop(buffer);
 	}
 
-	bool InPin::TryPeekFilledBuffer(BufferSPTR* buffer)
+	void InPin::PushProcessedBuffer(BufferUPTR&& buffer)
 	{
-		return filledBuffers.TryPeek(buffer);
-	}
-
-	void InPin::PushProcessedBuffer(const BufferSPTR& buffer)
-	{
-		processedBuffers.Push(buffer);
+		processedBuffers.Push(std::move(buffer));
 	}
 
 	void InPin::ReturnProcessedBuffers()
@@ -116,10 +111,10 @@ void  InPin::WorkThread()
 
 		if (source)
 		{
-			BufferSPTR buffer;
+			BufferUPTR buffer;
 			while (processedBuffers.TryPop(&buffer))
 			{
-				source->AcceptProcessedBuffer(buffer);
+				source->AcceptProcessedBuffer(std::move(buffer));
 
 				if (Owner().expired() || parent.get() == nullptr)
 				{
@@ -204,16 +199,16 @@ void  InPin::WorkThread()
 		parent->Log("InPin::Disconnect completed\n");
 	}
 
-	void InPin::ReceiveBuffer(const BufferSPTR& buffer)
+	void InPin::ReceiveBuffer(BufferUPTR&& buffer)
 	{
 		if (!buffer)
-			throw ArgumentNullException();
+			throw ArgumentNullException("InPin::ReceiveBuffer: empty buffer");
 
 
 		ElementSPTR parent = Owner().lock();
 
 
-		filledBuffers.Push(buffer);
+		filledBuffers.Push(std::move(buffer));
 
 
 		if (parent)

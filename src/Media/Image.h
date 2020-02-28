@@ -73,7 +73,7 @@ public:
 	virtual ~Image();
 };
 
-typedef std::shared_ptr<Image> ImageSPTR;
+typedef std::unique_ptr<Image> ImageUPTR;
 
 
 
@@ -90,4 +90,4 @@ public:
 	virtual ~AllocatedImage();
 };
 
-typedef std::shared_ptr<AllocatedImage> AllocatedImageSPTR;
+typedef std::unique_ptr<AllocatedImage> AllocatedImageUPTR;

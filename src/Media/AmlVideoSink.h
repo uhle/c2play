@@ -43,7 +43,7 @@ class AmlVideoSinkClockInPin : public InPin
 	double frameRate = 0;	// TODO just read info from Owner()
 
 
-	void ProcessClockBuffer(const BufferSPTR& buffer)
+	void ProcessClockBuffer(const BufferUPTR& buffer)
 	{
 		// truncate to 32bit
 		uint64_t pts = (uint64_t)(buffer->TimeStamp() * PTS_FREQ);
@@ -92,7 +92,7 @@ protected:
 
 	virtual void DoWork() override
 	{
-		BufferSPTR buffer;
+		BufferUPTR buffer;
 		if (TryGetFilledBuffer(&buffer))
 		{
 			ElementSPTR owner = Owner().lock();
@@ -101,7 +101,7 @@ protected:
 				ProcessClockBuffer(buffer);
 			}
 
-			PushProcessedBuffer(buffer);
+			PushProcessedBuffer(std::move(buffer));
 			ReturnProcessedBuffers();
 		}
 	}
@@ -160,19 +160,19 @@ typedef std::shared_ptr<AmlVideoSinkClockInPin> AmlVideoSinkClockInPinSPTR;
 //		{
 //			if (element->State() == MediaState::Play)
 //			{
-//				BufferSPTR buffer;
+//				BufferUPTR buffer;
 //				if (TryGetAvailableBuffer(&buffer))
 //				{
 //					if (buffer->Type() != BufferTypeEnum::ClockData)
 //						throw InvalidOperationException();
 //
-//					ClockDataBufferSPTR clockBuffer = std::static_pointer_cast<ClockDataBuffer>(buffer);
+//					ClockDataBufferPTR clockBuffer = static_cast<ClockDataBufferPTR>(buffer.get());
 //
 //					int vpts = codec_get_vpts(codecContextPtr);
 //					double clock = vpts / (double)PTS_FREQ;
 //
 //					clockBuffer->SetTimeStamp(clock);
-//					SendBuffer(clockBuffer);
+//					SendBuffer(std::move(buffer));
 //
 //					//printf("AmlVideoSinkClockOutPin: TimeStamp=%f\n", clockBuffer->TimeStamp());
 //				}
@@ -266,7 +266,7 @@ class AmlVideoSinkElement : public Element
 
 	void timer_Expired(void* sender, const EventArgs& args);
 	void SetupHardware();
-	void ProcessBuffer(const AVPacketBufferSPTR& buffer);
+	void ProcessBuffer(AVPacketBufferPTR buffer);
 	bool SendCodecData(unsigned long pts, unsigned char* data, int length);
 
 

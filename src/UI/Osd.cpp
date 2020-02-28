@@ -73,11 +73,12 @@ Osd::Osd(const CompositorSPTR& compositor)
 	if (!compositor)
 		throw ArgumentNullException();
 
-	ImageSPTR image = std::make_shared<AllocatedImage>(ImageFormatEnum::R8G8B8A8, 1, 1);
+	ImageUPTR image = std::make_unique<AllocatedImage>(ImageFormatEnum::R8G8B8A8, 1, 1);
 	unsigned int* data = (unsigned int*)image->Data();
 	*data = 0xffffffff;	// white
 
-	SourceSPTR source = std::make_shared<Source>(image);
+	SourceSPTR source = std::make_shared<Source>();
+	source->SetImage(std::move(image));
 
 	backgroundSprite = std::make_shared<Sprite>(source);
 	backgroundSprite->SetColor(PackedColor(0x00, 0x00, 0x00, 0x7f));

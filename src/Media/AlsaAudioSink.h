@@ -51,7 +51,6 @@ class AlsaAudioSinkElement : public Element
 	//IClockSinkPtr clockSink;
 	double lastTimeStamp = -1;
 	bool canPause = true;
-	LockedQueue<PcmDataBufferPtr> pcmBuffers = LockedQueue<PcmDataBufferPtr>(128);
 
 	snd_mixer_t* mixer_handle = nullptr;
 	snd_mixer_elem_t* mixer_control = nullptr;
@@ -78,7 +77,7 @@ class AlsaAudioSinkElement : public Element
 	void SetupAlsa(int frameSize);
 	void SetupAlsaMixer();
 
-	void ProcessBuffer(const PcmDataBufferSPTR& pcmBuffer);
+	void ProcessBuffer(PcmDataBufferPTR pcmBuffer);
 
 public:
 

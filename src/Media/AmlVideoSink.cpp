@@ -209,7 +209,7 @@ void AmlVideoSinkElement::SetupHardware()
 	//WriteToFile("/sys/module/amvdec_h265/parameters/dynamic_buf_num_margin", "16");
 }
 
-void AmlVideoSinkElement::ProcessBuffer(const AVPacketBufferSPTR& buffer)
+void AmlVideoSinkElement::ProcessBuffer(AVPacketBufferPTR buffer)
 {
 	playPauseMutex.Lock();
 
@@ -222,7 +222,7 @@ void AmlVideoSinkElement::ProcessBuffer(const AVPacketBufferSPTR& buffer)
 	}
 
 
-	//AVPacketBufferPTR buffer = std::static_pointer_cast<AVPacketBuffer>(buf);
+	//AVPacketBufferPTR buffer = static_cast<AVPacketBufferPTR>(buf.get());
 	AVPacket* pkt = buffer->GetAVPacket();
 
 
@@ -553,12 +553,12 @@ void AmlVideoSinkElement::DoWork()
 	//	     into the latter.
 
 
-	BufferSPTR buffer;
+	BufferUPTR buffer;
 
 	//if (videoPin->TryPeekFilledBuffer(&buffer))
 	//if (State() == MediaState::Play)
 	{
-		//AVPacketBufferSPTR avPacketBuffer = std::static_pointer_cast<AVPacketBuffer>(buffer);
+		//AVPacketBufferPTR avPacketBuffer = static_cast<AVPacketBufferPTR>(buffer.get());
 
 		// Video
 		while (State() == MediaState::Play && 
@@ -605,7 +605,7 @@ void AmlVideoSinkElement::DoWork()
 			{
 				case BufferTypeEnum::Marker:
 				{
-					MarkerBufferSPTR markerBuffer = std::static_pointer_cast<MarkerBuffer>(buffer);
+					MarkerBufferPTR markerBuffer = static_cast<MarkerBufferPTR>(buffer.get());
 					printf("AmlVideoSinkElement: got marker buffer Marker=%d\n", (int)markerBuffer->Marker());
 
 					switch (markerBuffer->Marker())
@@ -630,7 +630,7 @@ void AmlVideoSinkElement::DoWork()
 				case BufferTypeEnum::AVPacket:
 				{
 					//printf("AmlVideoSink: Got a buffer.\n");
-					AVPacketBufferSPTR avPacketBuffer = std::static_pointer_cast<AVPacketBuffer>(buffer);
+					AVPacketBufferPTR avPacketBuffer = static_cast<AVPacketBufferPTR>(buffer.get());
 					ProcessBuffer(avPacketBuffer);
 					//eosPts = buffer->TimeStamp();
 					break;
@@ -640,7 +640,7 @@ void AmlVideoSinkElement::DoWork()
 					throw NotSupportedException("Unexpected buffer type.");
 			}
 
-			videoPin->PushProcessedBuffer(buffer);
+			videoPin->PushProcessedBuffer(std::move(buffer));
 			videoPin->ReturnProcessedBuffers();
 
 			//printf("AmlVideoSink: filledBufferCount=%d\n", (int)videoPin->FilledBufferCount());

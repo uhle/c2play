@@ -48,10 +48,10 @@ OutPin::OutPin(const ElementWPTR& owner, const PinInfoSPTR& info)
 }
 
 
-void OutPin::AddAvailableBuffer(const BufferSPTR& buffer)
+void OutPin::AddAvailableBuffer(BufferUPTR&& buffer)
 {
 	if (!buffer)
-		throw ArgumentNullException();
+		throw ArgumentNullException("OutPin::AddAvailableBuffer: empty buffer");
 
 	ElementSPTR element = Owner().lock();
 	if (buffer->Owner() != element)
@@ -59,7 +59,7 @@ void OutPin::AddAvailableBuffer(const BufferSPTR& buffer)
 		throw InvalidOperationException("The buffer being added does not belong to this object.");
 	}
 
-	availableBuffers.Push(buffer);
+	availableBuffers.Push(std::move(buffer));
 
 	element->Wake();
 
@@ -71,17 +71,12 @@ void OutPin::DoWork()
 	// Work should not block in the thread
 }
 
-bool OutPin::TryGetAvailableBuffer(BufferSPTR* outValue)
+bool OutPin::TryGetAvailableBuffer(BufferUPTR* outValue)
 {
 	return availableBuffers.TryPop(outValue);
 }
 
-bool OutPin::TryPeekAvailableBuffer(BufferSPTR* buffer)
-{
-	return availableBuffers.TryPeek(buffer);
-}
-
-void OutPin::SendBuffer(const BufferSPTR& buffer)
+void OutPin::SendBuffer(BufferUPTR&& buffer)
 {
 	InPinSPTR pin = sink;
 
@@ -92,19 +87,19 @@ void OutPin::SendBuffer(const BufferSPTR& buffer)
 			owner->ExecutionState() == ExecutionStateEnum::Idle))
 		{
 
-			pin->ReceiveBuffer(buffer);
+			pin->ReceiveBuffer(std::move(buffer));
 		}
 		else
 		{
-			AcceptProcessedBuffer(buffer);
+			AcceptProcessedBuffer(std::move(buffer));
 		}
 	}
 	else
 	{
-		//AddAvailableBuffer(buffer);
+		//AddAvailableBuffer(std::move(buffer));
 
 		// This is required to generate an event
-		AcceptProcessedBuffer(buffer);
+		AcceptProcessedBuffer(std::move(buffer));
 	}
 }
 
@@ -163,23 +158,23 @@ void OutPin::Connect(const InPinSPTR& sink)
 	sinkMutex.Unlock();
 }
 
-void OutPin::AcceptProcessedBuffer(const BufferSPTR& buffer)
+void OutPin::AcceptProcessedBuffer(BufferUPTR&& buffer)
 {
 	if (!buffer)
-		throw ArgumentNullException();
+		throw ArgumentNullException("OutPin::AcceptProcessedBuffer: empty buffer");
 
 	//if (buffer->Owner() != (void*)this)
 	//{
 	//	throw InvalidOperationException("The buffer being returned does not belong to this object.");
 	//}
 
-	//availableBuffers.Push(buffer);
-	AddAvailableBuffer(buffer);
+	//availableBuffers.Push(std::move(buffer));
+	AddAvailableBuffer(std::move(buffer));
 
 	// Wake the work thread
 	waitCondition.Signal();
 
-	//BufferEventArgs args(buffer);
+	//BufferEventArgs args(std::move(buffer));
 	BufferReturned.Invoke(this, EventArgs::Empty());
 }
 

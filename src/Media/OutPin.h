@@ -29,18 +29,23 @@
 
 class BufferEventArgs : public EventArgs
 {
-	BufferSPTR buffer;
+	BufferUPTR buffer;
 
 
 public:
-	const BufferSPTR& Buffer() const
+	const BufferUPTR& Buffer() const
 	{
 		return buffer;
 	}
 
+	BufferUPTR&& MoveBuffer()
+	{
+		return std::move(buffer);
+	}
 
-	BufferEventArgs(const BufferSPTR& buffer)
-		: buffer(buffer)
+
+	BufferEventArgs(BufferUPTR&& buffer)
+		: buffer(std::forward<BufferUPTR>(buffer))
 	{
 	}
 
@@ -54,8 +59,8 @@ class OutPin : public Pin
 
 	InPinSPTR sink;
 	Mutex sinkMutex;
-	//ThreadSafeQueue<BufferSPTR> filledBuffers;
-	ThreadSafeQueue<BufferSPTR> availableBuffers;
+	//ThreadSafeQueue<BufferUPTR> filledBuffers;
+	ThreadSafeQueue<BufferUPTR> availableBuffers;
 	ThreadSPTR pinThread;
 	WaitCondition waitCondition;
 
@@ -65,7 +70,7 @@ class OutPin : public Pin
 
 protected:
 
-	void AddAvailableBuffer(const BufferSPTR& buffer);
+	void AddAvailableBuffer(BufferUPTR&& buffer);
 	virtual void DoWork();
 
 
@@ -85,14 +90,13 @@ public:
 
 	void Wake();
 
-	bool TryGetAvailableBuffer(BufferSPTR* outValue);
-	bool TryPeekAvailableBuffer(BufferSPTR* buffer);
-	void SendBuffer(const BufferSPTR& buffer);
+	bool TryGetAvailableBuffer(BufferUPTR* outValue);
+	void SendBuffer(BufferUPTR&& buffer);
 	virtual void Flush() override;
 
 
 	void Connect(const InPinSPTR& sink);
-	void AcceptProcessedBuffer(const BufferSPTR& buffer);
+	void AcceptProcessedBuffer(BufferUPTR&& buffer);
 };
 
 //typedef std::shared_ptr<OutPin> OutPinSPTR;

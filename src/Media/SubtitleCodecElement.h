@@ -57,7 +57,7 @@ class SubtitleDecoderElement : public Element
 	static void static_msg_callback(int level, const char* fmt, va_list va, void *data);
 
 	void SetupCodec();
-	void ProcessBuffer(const AVPacketBufferSPTR& buffer);
+	void ProcessBuffer(AVPacketBufferPTR buffer);
 
 
 public:
@@ -124,7 +124,7 @@ class SubtitleRenderElement : public Element, public virtual IClockSink
 
 	void timer_Expired(void* sender, const EventArgs& args);
 	void SetupCodec();
-	void ProcessBuffer(const ImageListBufferSPTR& buffer);
+	void ProcessBuffer(ImageListBufferPTR buffer);
 
 public:
 

@@ -143,7 +143,7 @@ void AlsaAudioSinkElement::SetupAlsaMixer()
 	       minVolume, maxVolume, left, ratio * (double)(left - minVolume), right, ratio * (double)(right - minVolume));
 }
 
-void AlsaAudioSinkElement::ProcessBuffer(const PcmDataBufferSPTR& pcmBuffer)
+void AlsaAudioSinkElement::ProcessBuffer(PcmDataBufferPTR pcmBuffer)
 {
 	playPauseMutex.Lock();
 
@@ -447,13 +447,13 @@ void AlsaAudioSinkElement::ProcessBuffer(const PcmDataBufferSPTR& pcmBuffer)
 		double time = pcmBuffer->TimeStamp() + adjust + audioAdjustSeconds;
 		clock = time;
 
-		BufferSPTR clockPinBuffer;
+		BufferUPTR clockPinBuffer;
 		if (clockOutPin->TryGetAvailableBuffer(&clockPinBuffer))
 		{
-			ClockDataBufferSPTR clockDataBuffer = std::static_pointer_cast<ClockDataBuffer>(clockPinBuffer);
+			ClockDataBufferPTR clockDataBuffer = static_cast<ClockDataBufferPTR>(clockPinBuffer.get());
 			clockDataBuffer->SetTimeStamp(time);
 
-			clockOutPin->SendBuffer(clockDataBuffer);
+			clockOutPin->SendBuffer(std::move(clockPinBuffer));
 
 			//printf("AmlAudioSinkElement: clock=%f\n", pcmBuffer->TimeStamp());
 		}
@@ -756,15 +756,15 @@ void AlsaAudioSinkElement::Initialize()
 		// Create a buffer
 		for (int i = 0; i < 1; ++i)
 		{
-			ClockDataBufferSPTR clockBuffer = std::make_shared<ClockDataBuffer>(shared_from_this());
-			clockOutPin->AcceptProcessedBuffer(clockBuffer);
+			ClockDataBufferUPTR clockBuffer = std::make_unique<ClockDataBuffer>(shared_from_this());
+			clockOutPin->AcceptProcessedBuffer(std::move(clockBuffer));
 		}
 	}
 }
 
 void AlsaAudioSinkElement::DoWork()
 {
-	BufferSPTR buffer;
+	BufferUPTR buffer;
 	if (audioPin->TryGetFilledBuffer(&buffer))
 	{
 		if (isFirstData)
@@ -799,7 +799,7 @@ void AlsaAudioSinkElement::DoWork()
 		{
 			case BufferTypeEnum::Marker:
 			{
-				MarkerBufferSPTR markerBuffer = std::static_pointer_cast<MarkerBuffer>(buffer);
+				MarkerBufferPTR markerBuffer = static_cast<MarkerBufferPTR>(buffer.get());
 				printf("AlsaAudioSink: got marker buffer Marker=%d\n", (int)markerBuffer->Marker());
 
 				switch (markerBuffer->Marker())
@@ -819,7 +819,7 @@ void AlsaAudioSinkElement::DoWork()
 
 			case BufferTypeEnum::PcmData:
 			{
-				PcmDataBufferSPTR pcmBuffer = std::static_pointer_cast<PcmDataBuffer>(buffer);
+				PcmDataBufferPTR pcmBuffer = static_cast<PcmDataBufferPTR>(buffer.get());
 
 				ProcessBuffer(pcmBuffer);
 
@@ -831,7 +831,7 @@ void AlsaAudioSinkElement::DoWork()
 		}
 
 
-		audioPin->PushProcessedBuffer(buffer);
+		audioPin->PushProcessedBuffer(std::move(buffer));
 		audioPin->ReturnProcessedBuffers();
 	}
 

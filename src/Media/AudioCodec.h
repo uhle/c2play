@@ -43,11 +43,11 @@ class AudioCodecElement : public Element
 	int streamChannels = 0;
 	int outputChannels = 0;
 	int sampleRate = 0;
-	AVFrameBufferSPTR frame;
+	AVFrameBufferUPTR frame;
 
 
 	void SetupCodec();
-	void ProcessBuffer(const AVPacketBufferSPTR& buffer, const AVFrameBufferSPTR& frame);
+	void ProcessBuffer(AVPacketBufferPTR buffer, const AVFrameBufferUPTR& frame);
 
 
 public:

@@ -26,7 +26,7 @@ ifeq ($(config),debug)
   DEFINES   += -DX11 -DDEBUG
   INCLUDES  += -I../../src/Media -I../../src/UI -I../../src/UI/X11
   CPPFLAGS  += -MMD -MP $(DEFINES) $(INCLUDES)
-  CFLAGS    += $(CPPFLAGS) $(ARCH) -g -std=c++11 -Wall
+  CFLAGS    += $(CPPFLAGS) $(ARCH) -g -std=c++14 -Wall
   CXXFLAGS  += $(CFLAGS) 
   LDFLAGS   += -lavformat -lavcodec -lavutil -lpthread -lasound -lrt -lX11 -lEGL -lGLESv2 -lass
   LIBS      += 
@@ -48,7 +48,7 @@ ifeq ($(config),release)
   DEFINES   += -DX11
   INCLUDES  += -I../../src/Media -I../../src/UI -I../../src/UI/X11
   CPPFLAGS  += -MMD -MP $(DEFINES) $(INCLUDES)
-  CFLAGS    += $(CPPFLAGS) $(ARCH) -O2 -std=c++11 -Wall
+  CFLAGS    += $(CPPFLAGS) $(ARCH) -O2 -std=c++14 -Wall
   CXXFLAGS  += $(CFLAGS) 
   LDFLAGS   += -s -lavformat -lavcodec -lavutil -lpthread -lasound -lrt -lX11 -lEGL -lGLESv2 -lass
   LIBS      += 

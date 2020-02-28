@@ -22,7 +22,7 @@ void MediaSourceElement::outPin_BufferReturned(void* sender, const EventArgs& ar
 	//printf("MediaSourceElement: outPin_BufferReturned entered.\n");
 
 	OutPin* outPin = (OutPin*)sender;
-	BufferSPTR buffer;
+	BufferUPTR buffer;
 
 	if (outPin->TryGetAvailableBuffer(&buffer))
 	{
@@ -31,11 +31,11 @@ void MediaSourceElement::outPin_BufferReturned(void* sender, const EventArgs& ar
 		case BufferTypeEnum::AVPacket:
 		{
 			// Free the memory allocated to the buffers by libav
-			AVPacketBufferPTR avbuffer = std::static_pointer_cast<AVPacketBuffer>(buffer);
+			AVPacketBufferPTR avbuffer = static_cast<AVPacketBufferPTR>(buffer.get());
 			avbuffer->Reset();
 
 			// Reuse the buffer
-			availableBuffers.Push(buffer);
+			availableBuffers.Push(std::move(buffer));
 			Wake();
 
 			break;
@@ -537,15 +537,15 @@ void MediaSourceElement::Initialize()
 	// Create buffers
 	for (int i = 0; i < BUFFER_COUNT; ++i)
 	{
-		AVPacketBufferPtr buffer = std::make_shared<AVPacketBuffer>(shared_from_this());
-		availableBuffers.Push(buffer);
+		AVPacketBufferUPTR buffer = std::make_unique<AVPacketBuffer>(shared_from_this());
+		availableBuffers.Push(std::move(buffer));
 	}
 }
 
 
 void MediaSourceElement::DoWork()
 {
-	BufferSPTR freeBuffer;
+	BufferUPTR freeBuffer;
 
 	//printf("MediaElement (%s) DoWork availableBuffers count=%d.\n", Name().c_str(), availableBuffers.Count());
 
@@ -554,14 +554,14 @@ void MediaSourceElement::DoWork()
 	{
 		//printf("MediaElement (%s) DoWork availableBuffers.TryPop=true.\n", Name().c_str());
 
-		AVPacketBufferPTR buffer = std::static_pointer_cast<AVPacketBuffer>(freeBuffer);
+		AVPacketBufferPTR buffer = static_cast<AVPacketBufferPTR>(freeBuffer.get());
 		int ret = av_read_frame(ctx, buffer->GetAVPacket());
 
 		if (ret < 0)
 		{
 			// Free the memory allocated to the buffers by libav
 			buffer->Reset();
-			availableBuffers.Push(buffer);
+			availableBuffers.Push(std::move(freeBuffer));
 			//Wake();
 
 			// End of file
@@ -570,8 +570,8 @@ void MediaSourceElement::DoWork()
 				// Send all Output Pins an EOS buffer
 				for (int i = 0; i < Outputs()->Count(); ++i)
 				{
-					MarkerBufferSPTR eosBuffer = std::make_shared<MarkerBuffer>(shared_from_this(), MarkerEnum::EndOfStream);
-					Outputs()->Item(i)->SendBuffer(eosBuffer);
+					MarkerBufferUPTR eosBuffer = std::make_unique<MarkerBuffer>(shared_from_this(), MarkerEnum::EndOfStream);
+					Outputs()->Item(i)->SendBuffer(std::move(eosBuffer));
 				}
 
 				//SetExecutionState(ExecutionStateEnum::Idle);
@@ -608,11 +608,10 @@ void MediaSourceElement::DoWork()
 
 
 
-			//AddFilledBuffer(buffer);
 			OutPinSPTR pin = streamList[pkt->stream_index];
 			if (pin && pin->IsConnected())
 			{
-				pin->SendBuffer(freeBuffer);
+				pin->SendBuffer(std::move(freeBuffer));
 				//printf("MediaElement (%s) DoWork pin[%d] buffer sent.\n", Name().c_str(), pkt->stream_index);
 			}
 			else
@@ -620,7 +619,7 @@ void MediaSourceElement::DoWork()
 				// Free the memory allocated to the buffers by libav
 				buffer->Reset();
 
-				availableBuffers.Push(buffer);
+				availableBuffers.Push(std::move(freeBuffer));
 				Wake();
 
 				//RetireBuffer(buffer);
@@ -660,8 +659,8 @@ void MediaSourceElement::Seek(double timeStamp)
 	// Send all Output Pins a Discontinue marker
 	for (int i = 0; i < Outputs()->Count(); ++i)
 	{
-		MarkerBufferSPTR marker = std::make_shared<MarkerBuffer>(shared_from_this(), MarkerEnum::Discontinue);
-		Outputs()->Item(i)->SendBuffer(marker);
+		MarkerBufferUPTR marker = std::make_unique<MarkerBuffer>(shared_from_this(), MarkerEnum::Discontinue);
+		Outputs()->Item(i)->SendBuffer(std::move(marker));
 	}
 }
 

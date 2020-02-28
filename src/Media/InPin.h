@@ -32,8 +32,8 @@ class InPin : public Pin
 
 	OutPinSPTR source;	// TODO: WeakPointer
 	Mutex sourceMutex;
-	ThreadSafeQueue<BufferSPTR> filledBuffers;
-	ThreadSafeQueue<BufferSPTR> processedBuffers;
+	ThreadSafeQueue<BufferUPTR> filledBuffers;
+	ThreadSafeQueue<BufferUPTR> processedBuffers;
 	ThreadSPTR pinThread;
 	WaitCondition waitCondition;
 
@@ -73,9 +73,8 @@ public:
 
 
 	// From this element
-	bool TryGetFilledBuffer(BufferSPTR* buffer);
-	bool TryPeekFilledBuffer(BufferSPTR* buffer);
-	void PushProcessedBuffer(const BufferSPTR& buffer);
+	bool TryGetFilledBuffer(BufferUPTR* buffer);
+	void PushProcessedBuffer(BufferUPTR&& buffer);
 	void ReturnProcessedBuffers();
 
 
@@ -84,7 +83,7 @@ public:
 	void AcceptConnection(const OutPinSPTR& source);
 	void Disconnect(const OutPinSPTR& source);
 
-	void ReceiveBuffer(const BufferSPTR& buffer);
+	void ReceiveBuffer(BufferUPTR&& buffer);
 
 	virtual void Flush() override;
 };

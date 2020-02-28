@@ -21,6 +21,7 @@
 
 #include <pthread.h>
 #include <queue>
+#include <utility>
 #include <unistd.h>
 
 
@@ -44,49 +45,24 @@ public:
 
 
 
-	void Push(const T& value)
+	void Push(T&& value)
 	{
 		mutex.Lock();
-		queue.push(value);
+		queue.emplace(std::forward<T>(value));
 		mutex.Unlock();
 	}
 
 	bool TryPop(T* outValue)
 	{
-		bool result;
+		bool result = false;
 
 		mutex.Lock();
 
-		if (queue.size() < 1)
+		if (queue.size() > 0)
 		{
-			result = false;
-		}
-		else
-		{
-			*outValue = queue.front();
+			*outValue = std::move(queue.front());
 			queue.pop();
 
-			result = true;
-		}
-
-		mutex.Unlock();
-
-		return result;
-	}
-
-	bool TryPeek(T* outValue)
-	{
-		bool result;
-
-		mutex.Lock();
-
-		if (queue.size() < 1)
-		{
-			result = false;
-		}
-		else
-		{
-			*outValue = queue.front();
 			result = true;
 		}
 

@@ -80,7 +80,7 @@ class MediaSourceElement : public Element
 	std::string url;
 	AVFormatContext* ctx = nullptr;
 
-	ThreadSafeQueue<BufferSPTR> availableBuffers;
+	ThreadSafeQueue<BufferUPTR> availableBuffers;
 	std::vector<OutPinSPTR> streamList;
 	std::vector<uint64_t> streamNextPts;
 

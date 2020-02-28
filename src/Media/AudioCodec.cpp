@@ -123,7 +123,7 @@ void AudioCodecElement::SetupCodec()
 }
 
 
-void AudioCodecElement::ProcessBuffer(const AVPacketBufferSPTR& buffer, const AVFrameBufferSPTR& frame)
+void AudioCodecElement::ProcessBuffer(AVPacketBufferPTR buffer, const AVFrameBufferUPTR& frame)
 {
 	AVPacket* pkt = buffer->GetAVPacket();
 	AVFrame* decoded_frame = frame->GetAVFrame();
@@ -204,7 +204,7 @@ void AudioCodecElement::ProcessBuffer(const AVPacketBufferSPTR& buffer, const AV
 			}
 
 
-			PcmDataBufferSPTR pcmDataBuffer = std::make_shared<PcmDataBuffer>(
+			PcmDataBufferUPTR pcmDataBuffer = std::make_unique<PcmDataBuffer>(
 				shared_from_this(),
 				format,
 				decoded_frame->channels,
@@ -293,7 +293,7 @@ void AudioCodecElement::ProcessBuffer(const AVPacketBufferSPTR& buffer, const AV
 				}
 			}
 
-			audioOutPin->SendBuffer(pcmDataBuffer);
+			audioOutPin->SendBuffer(std::move(pcmDataBuffer));
 		}
 	}
 
@@ -342,13 +342,12 @@ void AudioCodecElement::Initialize()
 
 
 	// Create buffer(s)
-	frame = std::make_shared<AVFrameBuffer>(shared_from_this());
+	frame = std::make_unique<AVFrameBuffer>(shared_from_this());
 }
 
 void AudioCodecElement::DoWork()
 {
-	BufferSPTR buffer;
-	BufferSPTR outBuffer;
+	BufferUPTR buffer;
 
 	// Reap output buffers
 	while (audioOutPin->TryGetAvailableBuffer(&buffer))
@@ -368,7 +367,7 @@ void AudioCodecElement::DoWork()
 			{
 			case BufferTypeEnum::Marker:
 			{
-				MarkerBufferSPTR markerBuffer = std::static_pointer_cast<MarkerBuffer>(buffer);
+				MarkerBufferPTR markerBuffer = static_cast<MarkerBufferPTR>(buffer.get());
 
 				switch (markerBuffer->Marker())
 				{
@@ -376,8 +375,8 @@ void AudioCodecElement::DoWork()
 					// Send all Output Pins an EOS buffer					
 					for (int i = 0; i < Outputs()->Count(); ++i)
 					{
-						MarkerBufferSPTR eosBuffer = std::make_shared<MarkerBuffer>(shared_from_this(), MarkerEnum::EndOfStream);
-						Outputs()->Item(i)->SendBuffer(eosBuffer);
+						MarkerBufferUPTR eosBuffer = std::make_unique<MarkerBuffer>(shared_from_this(), MarkerEnum::EndOfStream);
+						Outputs()->Item(i)->SendBuffer(std::move(eosBuffer));
 					}
 
 					//SetExecutionState(ExecutionStateEnum::Idle);
@@ -396,7 +395,7 @@ void AudioCodecElement::DoWork()
 				break;
 			}
 
-			audioInPin->PushProcessedBuffer(buffer);
+			audioInPin->PushProcessedBuffer(std::move(buffer));
 			audioInPin->ReturnProcessedBuffers();
 		}
 		else
@@ -430,10 +429,10 @@ void AudioCodecElement::DoWork()
 				}
 			}
 
-			AVPacketBufferSPTR avPacketBuffer = std::static_pointer_cast<AVPacketBuffer>(buffer);
+			AVPacketBufferPTR avPacketBuffer = static_cast<AVPacketBufferPTR>(buffer.get());
 			ProcessBuffer(avPacketBuffer, frame);
 
-			audioInPin->PushProcessedBuffer(buffer);
+			audioInPin->PushProcessedBuffer(std::move(buffer));
 			audioInPin->ReturnProcessedBuffers();
 		}
 	}

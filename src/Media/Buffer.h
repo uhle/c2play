@@ -17,6 +17,7 @@
 #pragma once
 
 #include "Exception.h"
+#include "Image.h"
 //#include "Codec.h"
 
 extern "C"
@@ -85,10 +86,8 @@ public:
 
 };
 
-//typedef std::shared_ptr<Buffer> BufferPTR;	// TODO: Change type to Buffer*
-typedef std::shared_ptr<Buffer> BufferSPTR;
+typedef Buffer* BufferPTR;
 typedef std::unique_ptr<Buffer> BufferUPTR;
-typedef std::weak_ptr<Buffer> BufferWPTR;
 
 
 
@@ -143,7 +142,8 @@ public:
 	//}
 };
 
-typedef std::shared_ptr<MarkerBuffer> MarkerBufferSPTR;
+typedef MarkerBuffer* MarkerBufferPTR;
+typedef std::unique_ptr<MarkerBuffer> MarkerBufferUPTR;
 
 
 
@@ -153,12 +153,12 @@ class GenericBuffer : public Buffer
 	T payload;
 
 protected:
-	//GenericBuffer(const T& payload)
-	//	: payload(payload)
+	//GenericBuffer(T&& payload)
+	//	: payload(std::forward<T>(payload))
 	//{
 	//}
-	GenericBuffer(BufferTypeEnum type, const ElementSPTR& owner, const T& payload)
-		: Buffer(type, owner), payload(payload)
+	GenericBuffer(BufferTypeEnum type, const ElementSPTR& owner, T&& payload)
+		: Buffer(type, owner), payload(std::forward<T>(payload))
 	{
 	}
 
@@ -169,6 +169,11 @@ public:
 	const T& Payload() const
 	{
 		return payload;
+	}
+
+	T&& MovePayload()
+	{
+		return std::move(payload);
 	}
 };
 
@@ -211,7 +216,8 @@ public:
 	}
 };
 
-typedef std::shared_ptr<ClockDataBuffer> ClockDataBufferSPTR;
+typedef ClockDataBuffer* ClockDataBufferPTR;
+typedef std::unique_ptr<ClockDataBuffer> ClockDataBufferUPTR;
 
 
 enum class PcmFormat
@@ -388,8 +394,8 @@ public:
 	}
 };
 
-typedef std::shared_ptr<PcmDataBuffer> PcmDataBufferPtr;
-typedef std::shared_ptr<PcmDataBuffer> PcmDataBufferSPTR;
+typedef PcmDataBuffer* PcmDataBufferPTR;
+typedef std::unique_ptr<PcmDataBuffer> PcmDataBufferUPTR;
 
 
 
@@ -481,9 +487,8 @@ public:
 
 };
 
-typedef std::shared_ptr<AVPacketBuffer> AVPacketBufferPtr;
-typedef std::shared_ptr<AVPacketBuffer> AVPacketBufferPTR;
-typedef std::shared_ptr<AVPacketBuffer> AVPacketBufferSPTR;
+typedef AVPacketBuffer* AVPacketBufferPTR;
+typedef std::unique_ptr<AVPacketBuffer> AVPacketBufferUPTR;
 
 
 class AVFrameBuffer : public GenericBuffer<AVFrame*>
@@ -553,15 +558,11 @@ public:
 	}
 };
 
-typedef std::shared_ptr<AVFrameBuffer> AVFrameBufferPtr;
-typedef std::shared_ptr<AVFrameBuffer> AVFrameBufferSPTR;
+typedef std::unique_ptr<AVFrameBuffer> AVFrameBufferUPTR;
 
 
 
-class Image;
-typedef std::shared_ptr<Image> ImageSPTR;
-
-class ImageBuffer : public GenericBuffer<ImageSPTR>
+class ImageBuffer : public GenericBuffer<ImageUPTR>
 {
 	double timeStamp = -1;
 	int x = 0;
@@ -601,8 +602,8 @@ public:
 
 
 
-	ImageBuffer(const ElementSPTR& owner, const ImageSPTR& image)
-		: GenericBuffer(BufferTypeEnum::Image, owner, image)
+	ImageBuffer(const ElementSPTR& owner, ImageUPTR&& image)
+		: GenericBuffer(BufferTypeEnum::Image, owner, std::forward<ImageUPTR>(image))
 		//timeStamp(timeStamp)
 	{
 		if (!image)
@@ -635,15 +636,15 @@ public:
 	}
 };
 
-typedef std::shared_ptr<ImageBuffer> ImageBufferSPTR;
+typedef std::unique_ptr<ImageBuffer> ImageBufferUPTR;
 
 
 //----------
 
-typedef std::vector<ImageBufferSPTR> ImageList;
-typedef std::shared_ptr<ImageList> ImageListSPTR;
+typedef std::vector<ImageBufferUPTR> ImageList;
+typedef std::unique_ptr<ImageList> ImageListUPTR;
 
-class ImageListBuffer : public GenericBuffer<ImageListSPTR>
+class ImageListBuffer : public GenericBuffer<ImageListUPTR>
 {
 	double timeStamp = -1;
 
@@ -651,8 +652,8 @@ class ImageListBuffer : public GenericBuffer<ImageListSPTR>
 public:
 
 
-	ImageListBuffer(const ElementSPTR& owner, const ImageListSPTR& imageList)
-		: GenericBuffer(BufferTypeEnum::ImageList, owner, imageList)
+	ImageListBuffer(const ElementSPTR& owner, ImageListUPTR&& imageList)
+		: GenericBuffer(BufferTypeEnum::ImageList, owner, std::forward<ImageListUPTR>(imageList))
 		//timeStamp(timeStamp)
 	{
 		if (!imageList)
@@ -685,4 +686,5 @@ public:
 	}
 };
 
-typedef std::shared_ptr<ImageListBuffer> ImageListBufferSPTR;
+typedef ImageListBuffer* ImageListBufferPTR;
+typedef std::unique_ptr<ImageListBuffer> ImageListBufferUPTR;

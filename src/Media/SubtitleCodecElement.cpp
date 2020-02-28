@@ -87,7 +87,7 @@ void SubtitleDecoderElement::SetupCodec()
 	//}
 }
 
-void SubtitleDecoderElement::ProcessBuffer(const AVPacketBufferSPTR& buffer)
+void SubtitleDecoderElement::ProcessBuffer(AVPacketBufferPTR buffer)
 {
 	AVPacket* pkt = buffer->GetAVPacket();
 	if (avSubtitle == nullptr)
@@ -160,7 +160,7 @@ void SubtitleDecoderElement::ProcessBuffer(const AVPacketBufferSPTR& buffer)
 
 
 			bool hasAssa = false;
-			ImageListSPTR imageList = std::make_shared<ImageList>();
+			ImageListUPTR imageList = std::make_unique<ImageList>();
 
 			for (unsigned int i = 0; i < avSubtitle->num_rects; i++)
 			{
@@ -219,7 +219,7 @@ void SubtitleDecoderElement::ProcessBuffer(const AVPacketBufferSPTR& buffer)
 					{
 						printf("Subtitle:\tBITMAP\n");
 
-						AllocatedImageSPTR image = std::make_shared<AllocatedImage>(ImageFormatEnum::R8G8B8A8,
+						AllocatedImageUPTR image = std::make_unique<AllocatedImage>(ImageFormatEnum::R8G8B8A8,
 							rect->w, rect->h);
 						unsigned int* imageData = (unsigned int*)image->Data();
 
@@ -243,16 +243,16 @@ void SubtitleDecoderElement::ProcessBuffer(const AVPacketBufferSPTR& buffer)
 
 						printf("\n");
 
-						ImageBufferSPTR imageBuffer = std::make_shared<ImageBuffer>(
+						ImageBufferUPTR imageBuffer = std::make_unique<ImageBuffer>(
 							shared_from_this(),
-							image);
+							std::move(image));
 						imageBuffer->SetTimeStamp(pkt->pts * av_q2d(buffer->TimeBase()));
 						imageBuffer->SetDuration(pkt->duration * av_q2d(buffer->TimeBase()));
 						imageBuffer->SetX(rect->x);
 						imageBuffer->SetY(rect->y);
 
-						//outPin->SendBuffer(imageBuffer);
-						imageList->push_back(imageBuffer);
+						//outPin->SendBuffer(std::move(imageBuffer));
+						imageList->push_back(std::move(imageBuffer));
 						break;
 					}
 
@@ -423,7 +423,7 @@ void SubtitleDecoderElement::ProcessBuffer(const AVPacketBufferSPTR& buffer)
 						img->w, img->h, img->stride, img->bitmap, img->color, img->dst_x, img->dst_y, img->next, img->type);
 
 
-					AllocatedImageSPTR image = std::make_shared<AllocatedImage>(ImageFormatEnum::R8G8B8A8,
+					AllocatedImageUPTR image = std::make_unique<AllocatedImage>(ImageFormatEnum::R8G8B8A8,
 						img->w, img->h);
 					unsigned int* imageData = (unsigned int*)image->Data();
 
@@ -464,20 +464,20 @@ void SubtitleDecoderElement::ProcessBuffer(const AVPacketBufferSPTR& buffer)
 					}
 
 
-					ImageBufferSPTR imageBuffer = std::make_shared<ImageBuffer>(
+					ImageBufferUPTR imageBuffer = std::make_unique<ImageBuffer>(
 						shared_from_this(),
-						image);
+						std::move(image));
 					imageBuffer->SetTimeStamp(timeStamp);
 					imageBuffer->SetDuration(duration);
 					imageBuffer->SetX(img->dst_x);
 					imageBuffer->SetY(img->dst_y);
 
-					//outPin->SendBuffer(imageBuffer);
-					imageList->push_back(imageBuffer);
-
 					//printf("ASS_Image: Added Image timeStamp=%f/%f duration=%f/%f\n",
 					//	timeStamp, imageBuffer->TimeStamp(),
 					//	duration, imageBuffer->Duration());
+
+					//outPin->SendBuffer(std::move(imageBuffer));
+					imageList->push_back(std::move(imageBuffer));
 
 					img = img->next;
 				}
@@ -486,12 +486,12 @@ void SubtitleDecoderElement::ProcessBuffer(const AVPacketBufferSPTR& buffer)
 
 			//if (imageList->size() > 0)
 			{
-				ImageListBufferSPTR imageListBuffer = std::make_shared<ImageListBuffer>(
+				ImageListBufferUPTR imageListBuffer = std::make_unique<ImageListBuffer>(
 					shared_from_this(),
-					imageList);
+					std::move(imageList));
 				imageListBuffer->SetTimeStamp(timeStamp);
 
-				outPin->SendBuffer(imageListBuffer);
+				outPin->SendBuffer(std::move(imageListBuffer));
 			}
 
 			avsubtitle_free(avSubtitle);
@@ -578,13 +578,12 @@ void SubtitleDecoderElement::Initialize()
 
 
 	//// Create buffer(s)
-	//frame = std::make_shared<AVFrameBuffer>(shared_from_this());
+	//frame = std::make_unique<AVFrameBuffer>(shared_from_this());
 }
 
 void SubtitleDecoderElement::DoWork()
 {
-	BufferSPTR buffer;
-	BufferSPTR outBuffer;
+	BufferUPTR buffer;
 
 	// Reap output buffers
 	while (outPin->TryGetAvailableBuffer(&buffer))
@@ -604,7 +603,7 @@ void SubtitleDecoderElement::DoWork()
 			{
 				case BufferTypeEnum::Marker:
 				{
-					MarkerBufferSPTR markerBuffer = std::static_pointer_cast<MarkerBuffer>(buffer);
+					MarkerBufferPTR markerBuffer = static_cast<MarkerBufferPTR>(buffer.get());
 
 					switch (markerBuffer->Marker())
 					{
@@ -612,8 +611,8 @@ void SubtitleDecoderElement::DoWork()
 							// Send all Output Pins an EOS buffer
 							for (int i = 0; i < Outputs()->Count(); ++i)
 							{
-								MarkerBufferSPTR eosBuffer = std::make_shared<MarkerBuffer>(shared_from_this(), MarkerEnum::EndOfStream);
-								Outputs()->Item(i)->SendBuffer(eosBuffer);
+								MarkerBufferUPTR eosBuffer = std::make_unique<MarkerBuffer>(shared_from_this(), MarkerEnum::EndOfStream);
+								Outputs()->Item(i)->SendBuffer(std::move(eosBuffer));
 							}
 
 							//SetExecutionState(ExecutionStateEnum::Idle);
@@ -632,7 +631,7 @@ void SubtitleDecoderElement::DoWork()
 					break;
 			}
 
-			inPin->PushProcessedBuffer(buffer);
+			inPin->PushProcessedBuffer(std::move(buffer));
 			inPin->ReturnProcessedBuffers();
 		}
 		else
@@ -661,10 +660,10 @@ void SubtitleDecoderElement::DoWork()
 				}
 			}
 
-			AVPacketBufferSPTR avPacketBuffer = std::static_pointer_cast<AVPacketBuffer>(buffer);
+			AVPacketBufferPTR avPacketBuffer = static_cast<AVPacketBufferPTR>(buffer.get());
 			ProcessBuffer(avPacketBuffer);
 
-			inPin->PushProcessedBuffer(buffer);
+			inPin->PushProcessedBuffer(std::move(buffer));
 			inPin->ReturnProcessedBuffers();
 		}
 	}
@@ -810,7 +809,7 @@ void SubtitleRenderElement::SetupCodec()
 {
 }
 
-void SubtitleRenderElement::ProcessBuffer(const ImageListBufferSPTR& buffer)
+void SubtitleRenderElement::ProcessBuffer(ImageListBufferPTR buffer)
 {
 	entriesMutex.Lock();
 
@@ -831,12 +830,13 @@ void SubtitleRenderElement::ProcessBuffer(const ImageListBufferSPTR& buffer)
 	{
 		float z = -1;
 
-		for (const ImageBufferSPTR& image : *(buffer->Payload()))
+		for (const ImageBufferUPTR& image : *(buffer->Payload()))
 		{
-			SourceSPTR source = std::make_shared<Source>(image->Payload());
+			SourceSPTR source = std::make_shared<Source>();
+			source->SetImage(image->MovePayload());
 
 			SpriteSPTR sprite = std::make_shared<Sprite>(source);
-			sprite->SetDestinationRect(Rectangle(image->X(), image->Y(), image->Payload()->Width(), image->Payload()->Height()));
+			sprite->SetDestinationRect(Rectangle(image->X(), image->Y(), source->Image()->Width(), source->Image()->Height()));
 			sprite->SetColor(PackedColor(0xff, 0xff, 0xff, 0xff));
 			sprite->SetZOrder(z);
 
@@ -862,6 +862,8 @@ void SubtitleRenderElement::ProcessBuffer(const ImageListBufferSPTR& buffer)
 			printf("SubtitleRenderElement::ProcessBuffer - Added (StartTime=%f StopTime=%f Sprite=%p)\n",
 				entry.StartTime, entry.StopTime, entry.Sprite.get());
 		}
+
+		buffer->Payload()->clear();
 	}
 
 	entriesMutex.Unlock();
@@ -910,7 +912,7 @@ void SubtitleRenderElement::Initialize()
 
 void SubtitleRenderElement::DoWork()
 {
-	BufferSPTR buffer;
+	BufferUPTR buffer;
 
 	if (inPin->TryGetFilledBuffer(&buffer))
 	{
@@ -921,7 +923,7 @@ void SubtitleRenderElement::DoWork()
 			{
 			case BufferTypeEnum::Marker:
 			{
-				MarkerBufferSPTR markerBuffer = std::static_pointer_cast<MarkerBuffer>(buffer);
+				MarkerBufferPTR markerBuffer = static_cast<MarkerBufferPTR>(buffer.get());
 
 				switch (markerBuffer->Marker())
 				{
@@ -929,8 +931,8 @@ void SubtitleRenderElement::DoWork()
 					// Send all Output Pins an EOS buffer
 					for (int i = 0; i < Outputs()->Count(); ++i)
 					{
-						MarkerBufferSPTR eosBuffer = std::make_shared<MarkerBuffer>(shared_from_this(), MarkerEnum::EndOfStream);
-						Outputs()->Item(i)->SendBuffer(eosBuffer);
+						MarkerBufferUPTR eosBuffer = std::make_unique<MarkerBuffer>(shared_from_this(), MarkerEnum::EndOfStream);
+						Outputs()->Item(i)->SendBuffer(std::move(eosBuffer));
 					}
 
 					//SetExecutionState(ExecutionStateEnum::Idle);
@@ -949,7 +951,7 @@ void SubtitleRenderElement::DoWork()
 				break;
 			}
 
-			inPin->PushProcessedBuffer(buffer);
+			inPin->PushProcessedBuffer(std::move(buffer));
 			inPin->ReturnProcessedBuffers();
 		}
 		else
@@ -975,10 +977,10 @@ void SubtitleRenderElement::DoWork()
 				}
 			}
 
-			ImageListBufferSPTR imageBuffer = std::static_pointer_cast<ImageListBuffer>(buffer);
+			ImageListBufferPTR imageBuffer = static_cast<ImageListBufferPTR>(buffer.get());
 			ProcessBuffer(imageBuffer);
 
-			inPin->PushProcessedBuffer(buffer);
+			inPin->PushProcessedBuffer(std::move(buffer));
 			inPin->ReturnProcessedBuffers();
 		}
 	}

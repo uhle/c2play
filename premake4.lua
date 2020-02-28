@@ -11,7 +11,7 @@ project "c2play"
    includedirs { "src/Media", "src/UI", "src/UI/Fbdev" }
    files { "src/**.h", "src/**.cpp" }
    excludes { "src/UI/X11/**" }
-   buildoptions { "-std=c++11" }
+   buildoptions { "-std=c++14 -Wall" }
    linkoptions { "-lavformat -lavcodec -lavutil -lpthread -lasound -lrt -lEGL -lGLESv2 -lass" }
 
    configuration "Debug"
@@ -29,7 +29,7 @@ project "c2play-x11"
    includedirs { "src/Media", "src/UI", "src/UI/X11" }
    files { "src/**.h", "src/**.cpp" }
    excludes { "src/UI/Fbdev/**" }
-   buildoptions { "-std=c++11 -Wall" }
+   buildoptions { "-std=c++14 -Wall" }
    linkoptions { "-lavformat -lavcodec -lavutil -lpthread -lasound -lrt -lX11 -lEGL -lGLESv2 -lass" }
    defines { "X11" }
 

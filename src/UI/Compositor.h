@@ -34,25 +34,29 @@
 
 class Source
 {
-	ImageSPTR image;
+	ImageUPTR image;
 	bool isDirty = true;
 
 protected:
 
 public:
-	const ImageSPTR& Image() const
+	const ImageUPTR& Image() const
 	{
 		return image;
+	}
+	void SetImage(ImageUPTR&& image)
+	{
+		this->image = std::move(image);
 	}
 
 	int Width() const
 	{
-		return image->Width();
+		return (!image) ? -1 : image->Width();
 	}
 
 	int Height() const
 	{
-		return image->Height();
+		return (!image) ? -1 : image->Height();
 	}
 
 	bool IsDirty() const
@@ -61,12 +65,7 @@ public:
 	}
 
 
-	Source(const ImageSPTR& image)
-		: image(image)
-	{
-		if (!image)
-			throw ArgumentNullException();
-	}
+	Source() {}
 
 	virtual ~Source() {}
 
@@ -146,7 +145,7 @@ public:
 	Sprite(const SourceSPTR& source)
 		: source(source)
 	{
-		if (!source)
+		if (!source || !source->Image())
 			throw ArgumentNullException();
 
 
@@ -157,7 +156,7 @@ public:
 	Sprite(const SourceSPTR& source, Rectangle desitinationRect)
 		: source(source), destinationRect(desitinationRect)
 	{
-		if (!source)
+		if (!source || !source->Image())
 			throw ArgumentNullException();
 
 	}
