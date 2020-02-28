@@ -141,14 +141,13 @@ const ChapterListSPTR& MediaPlayer::Chapters() const
 }
 
 
-MediaPlayer::MediaPlayer(const std::string& url, const std::string& avOptions, const CompositorSPTR& compositor, int videoStream, int audioStream, int subtitleStream)
-	:url(url), avOptions(avOptions), compositor(compositor)
+MediaPlayer::MediaPlayer(const MediaSourceElementSPTR& source, const CompositorSPTR& compositor, int videoStream, int audioStream, int subtitleStream)
+	: source(source), compositor(compositor)
 {
-	if (!compositor)
+	if (!source || !compositor)
 		throw ArgumentNullException();
 
 
-	source = std::make_shared<MediaSourceElement>(url, avOptions);
 	source->SetName(std::string("Source"));
 	source->Execute();
 	source->WaitForExecutionState(ExecutionStateEnum::Idle);

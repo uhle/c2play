@@ -36,6 +36,7 @@ extern "C"
 }
 
 #include "InputDevice.h"
+#include "MediaSourceElement.h"
 #include "MediaPlayer.h"
 
 #ifdef X11
@@ -226,10 +227,6 @@ int main(int argc, char** argv)
 	}
 
 
-	// Trap signal to clean up
-	signal(SIGINT, SignalHandler);
-
-
 	// options
 	int c;
 	double optionStartPosition = 0;
@@ -333,15 +330,6 @@ int main(int argc, char** argv)
 	}
 
 
-#if 1
-	GetDevices();
-
-	for (InputDevicePtr dev : inputDevices)
-	{
-		printf("Using input device: %s\n", dev->Name().c_str());
-	}
-
-#endif
 
 
 	// Initialize libav
@@ -352,6 +340,21 @@ int main(int argc, char** argv)
 	avformat_network_init();
 
 
+	MediaSourceElementSPTR source = std::make_shared<MediaSourceElement>(url, avOptions);
+
+
+	// Trap signal to clean up
+	signal(SIGINT, SignalHandler);
+
+
+#if 1
+	GetDevices();
+
+	for (InputDevicePtr dev : inputDevices)
+	{
+		printf("Using input device: %s\n", dev->Name().c_str());
+	}
+#endif
 
 
 
@@ -380,8 +383,7 @@ int main(int argc, char** argv)
 	osd = std::make_shared<Osd>(compositor);
 
 
-	MediaPlayerSPTR mediaPlayer = std::make_shared<MediaPlayer>(url,
-		avOptions,
+	MediaPlayerSPTR mediaPlayer = std::make_shared<MediaPlayer>(source,
 		compositor,
 		optionVideoIndex,
 		optionAudioIndex,

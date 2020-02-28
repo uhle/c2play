@@ -30,8 +30,6 @@
 
 class MediaPlayer
 {
-	std::string url;
-	std::string avOptions;
 	MediaSourceElementSPTR source;
 	AmlVideoSinkElementSPTR videoSink;
 	AudioCodecElementSPTR audioCodec;
@@ -68,7 +66,7 @@ public:
 
 
 
-	MediaPlayer(const std::string& url, const std::string& avOptions, const CompositorSPTR& compositor, int videoStream, int audioStream, int subtitleStream);
+	MediaPlayer(const MediaSourceElementSPTR& source, const CompositorSPTR& compositor, int videoStream, int audioStream, int subtitleStream);
 	~MediaPlayer();
 
 

@@ -77,20 +77,6 @@ void MediaSourceElement::PrintDictionary(AVDictionary* dictionary)
 
 void MediaSourceElement::SetupPins()
 {
-	int ret = avformat_find_stream_info(ctx, NULL);
-	if (ret < 0)
-	{
-		throw Exception();
-	}
-
-
-	startTime = ctx->start_time / (double)AV_TIME_BASE;
-	printf("Start time: %f\n", startTime);
-
-	duration = ctx->duration / (double)AV_TIME_BASE;
-	printf("Duration: %f\n", duration);
-
-
 	int streamCount = ctx->nb_streams;
 	if (streamCount < 1)
 	{
@@ -460,10 +446,19 @@ MediaSourceElement::MediaSourceElement(const std::string& url, const std::string
 		throw Exception();
 	}
 
+	printf("Analyzing media source ...\n");
+
 	int ret = avformat_open_input(&ctx, url.c_str(), NULL, &options_dict);
 	if (ret < 0)
 	{
 		printf("avformat_open_input failed.\n");
+		throw AVException(ret);
+	}
+
+	ret = avformat_find_stream_info(ctx, NULL);
+	if (ret < 0)
+	{
+		printf("avformat_find_stream_info failed.\n");
 		throw AVException(ret);
 	}
 
@@ -472,7 +467,11 @@ MediaSourceElement::MediaSourceElement(const std::string& url, const std::string
 	PrintDictionary(ctx->metadata);
 
 
-	//SetupPins();
+	startTime = ctx->start_time / (double)AV_TIME_BASE;
+	printf("Start time: %f\n", startTime);
+
+	duration = ctx->duration / (double)AV_TIME_BASE;
+	printf("Duration: %f\n", duration);
 
 
 	// Chapters
@@ -503,6 +502,8 @@ MediaSourceElement::MediaSourceElement(const std::string& url, const std::string
 			chapter.Title = std::string(titleEntry->value);
 		}
 
+		printf("Chapter[%02d] = '%s' : %f\n", i, chapter.Title.c_str(), chapter.TimeStamp);
+
 		chapters->push_back(chapter);
 	}
 }
@@ -530,15 +531,6 @@ void MediaSourceElement::Initialize()
 		{
 			item->BufferReturned.AddListener(bufferReturnedListener);
 		}
-	}
-
-
-	// Chapters
-	int index = 0;
-	for (const auto& chapter : *chapters)
-	{
-		printf("Chapter[%02d] = '%s' : %f\n", index, chapter.Title.c_str(), chapter.TimeStamp);
-		++index;
 	}
 
 
