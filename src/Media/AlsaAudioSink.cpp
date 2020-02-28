@@ -28,7 +28,7 @@ void AlsaAudioSinkElement::SetupAlsa(int frameSize)
 	}
 
 
-	int err = snd_pcm_open(&handle, device, SND_PCM_STREAM_PLAYBACK, SND_PCM_NONBLOCK);
+	int err = snd_pcm_open(&pcm_handle, device, SND_PCM_STREAM_PLAYBACK, SND_PCM_NONBLOCK);
 	if (err < 0)
 	{
 		printf("snd_pcm_open error: %s\n", snd_strerror(err));
@@ -51,27 +51,27 @@ void AlsaAudioSinkElement::SetupAlsa(int frameSize)
 
 
 	(snd_pcm_hw_params_malloc(&hw_params));
-	(snd_pcm_hw_params_any(handle, hw_params));
-	(snd_pcm_hw_params_set_access(handle, hw_params, SND_PCM_ACCESS_RW_INTERLEAVED));
-	(snd_pcm_hw_params_set_format(handle, hw_params, SND_PCM_FORMAT_S16_LE));
-	(snd_pcm_hw_params_set_rate_near(handle, hw_params, &sampleRate, NULL));
-	(snd_pcm_hw_params_set_channels(handle, hw_params, alsa_channels));
-	(snd_pcm_hw_params_set_buffer_size_near(handle, hw_params, &buffer_size));
-	(snd_pcm_hw_params_set_period_size_near(handle, hw_params, &period_size, NULL));
-	(snd_pcm_hw_params(handle, hw_params));
+	(snd_pcm_hw_params_any(pcm_handle, hw_params));
+	(snd_pcm_hw_params_set_access(pcm_handle, hw_params, SND_PCM_ACCESS_RW_INTERLEAVED));
+	(snd_pcm_hw_params_set_format(pcm_handle, hw_params, SND_PCM_FORMAT_S16_LE));
+	(snd_pcm_hw_params_set_rate_near(pcm_handle, hw_params, &sampleRate, nullptr));
+	(snd_pcm_hw_params_set_channels(pcm_handle, hw_params, alsa_channels));
+	(snd_pcm_hw_params_set_buffer_size_near(pcm_handle, hw_params, &buffer_size));
+	(snd_pcm_hw_params_set_period_size_near(pcm_handle, hw_params, &period_size, nullptr));
+	(snd_pcm_hw_params(pcm_handle, hw_params));
 	snd_pcm_hw_params_free(hw_params);
 
 	printf("SetupAlsa: buffer_size=%lu, period_size=%lu\n", buffer_size, period_size);
 
 	snd_pcm_sw_params_malloc(&sw_params);
-	snd_pcm_sw_params_current(handle, sw_params);
-	snd_pcm_sw_params_set_start_threshold(handle, sw_params, (buffer_size / period_size) * period_size);
-	snd_pcm_sw_params_set_avail_min(handle, sw_params, period_size);
-	snd_pcm_sw_params(handle, sw_params);
+	snd_pcm_sw_params_current(pcm_handle, sw_params);
+	snd_pcm_sw_params_set_start_threshold(pcm_handle, sw_params, (buffer_size / period_size) * period_size);
+	snd_pcm_sw_params_set_avail_min(pcm_handle, sw_params, period_size);
+	snd_pcm_sw_params(pcm_handle, sw_params);
 	snd_pcm_sw_params_free(sw_params);
 
 
-	snd_pcm_prepare(handle);
+	snd_pcm_prepare(pcm_handle);
 }
 
 void AlsaAudioSinkElement::ProcessBuffer(const PcmDataBufferSPTR& pcmBuffer)
@@ -80,8 +80,8 @@ void AlsaAudioSinkElement::ProcessBuffer(const PcmDataBufferSPTR& pcmBuffer)
 
 	if (doResumeFlag)
 	{
-		//printf("snd_pcm_pause: handle=%p, enable=0\n", handle);
-		snd_pcm_pause(handle, 0);
+		//printf("snd_pcm_pause: handle=%p, enable=0\n", pcm_handle);
+		snd_pcm_pause(pcm_handle, 0);
 		//printf("snd_pcm_pause: returned.\n");
 
 		doResumeFlag = false;
@@ -325,9 +325,9 @@ void AlsaAudioSinkElement::ProcessBuffer(const PcmDataBufferSPTR& pcmBuffer)
 	*/
 	snd_pcm_sframes_t delay;
 
-	//printf("snd_pcm_delay: handle=%p, &delay=%p\n", handle, &delay);
+	//printf("snd_pcm_delay: handle=%p, &delay=%p\n", pcm_handle, &delay);
 
-	if (snd_pcm_delay(handle, &delay) != 0)
+	if (snd_pcm_delay(pcm_handle, &delay) != 0)
 	{
 		printf("snd_pcm_delay failed.\n");
 
@@ -337,16 +337,16 @@ void AlsaAudioSinkElement::ProcessBuffer(const PcmDataBufferSPTR& pcmBuffer)
 		the fill level of the playback ring buffer. At least this is
 		closer to the truth than a zero delay.
 		*/
-		//printf("snd_pcm_avail_update: handle=%p\n", handle);
-		snd_pcm_sframes_t available_frames = snd_pcm_avail_update(handle);
+		//printf("snd_pcm_avail_update: handle=%p\n", pcm_handle);
+		snd_pcm_sframes_t available_frames = snd_pcm_avail_update(pcm_handle);
 		//printf("snd_pcm_avail_update: returned available_frames=%ld\n", available_frames);
 
 		if (available_frames < 0)
 		{
 			printf("snd_pcm_avail_update failed: %s\n", snd_strerror(available_frames));
 
-			//printf("snd_pcm_recover: handle=%p, err=%ld, silent=1\n", handle, available_frames);
-			int err = snd_pcm_recover(handle, available_frames, 1);
+			//printf("snd_pcm_recover: handle=%p, err=%ld, silent=1\n", pcm_handle, available_frames);
+			int err = snd_pcm_recover(pcm_handle, available_frames, 1);
 			//printf("snd_pcm_recover: returned err=%d\n", err);
 
 			if (err < 0)
@@ -427,8 +427,8 @@ void AlsaAudioSinkElement::ProcessBuffer(const PcmDataBufferSPTR& pcmBuffer)
 			framesToWrite = period_size;
 		}
 
-		//printf("snd_pcm_writei: handle=%p, ptr=%p, frames=%ld\n", handle, ptr, framesToWrite);
-		snd_pcm_sframes_t frames = snd_pcm_writei(handle,
+		//printf("snd_pcm_writei: handle=%p, ptr=%p, frames=%ld\n", pcm_handle, ptr, framesToWrite);
+		snd_pcm_sframes_t frames = snd_pcm_writei(pcm_handle,
 			ptr,
 			framesToWrite);
 		//printf("snd_pcm_writei: returned frames=%ld\n", frames);
@@ -444,12 +444,12 @@ void AlsaAudioSinkElement::ProcessBuffer(const PcmDataBufferSPTR& pcmBuffer)
 			}
 			else if (frames == -EAGAIN)
 			{
-				snd_pcm_state_t state = snd_pcm_state(handle);
+				snd_pcm_state_t state = snd_pcm_state(pcm_handle);
 
 				if (state == SND_PCM_STATE_RUNNING)
 				{
-					//printf("snd_pcm_wait: handle=%p, timeout=-1\n", handle);
-					int err = snd_pcm_wait(handle, -1);
+					//printf("snd_pcm_wait: handle=%p, timeout=-1\n", pcm_handle);
+					int err = snd_pcm_wait(pcm_handle, -1);
 					//printf("snd_pcm_wait: returned err=%d\n", err);
 
 					if (err < 0)
@@ -460,8 +460,8 @@ void AlsaAudioSinkElement::ProcessBuffer(const PcmDataBufferSPTR& pcmBuffer)
 				}
 				else if (state == SND_PCM_STATE_PREPARED)
 				{
-					//printf("snd_pcm_start: handle=%p\n", handle);
-					int err = snd_pcm_start(handle);
+					//printf("snd_pcm_start: handle=%p\n", pcm_handle);
+					int err = snd_pcm_start(pcm_handle);
 					//printf("snd_pcm_start: returned err=%d\n", err);
 
 					if (err < 0)
@@ -475,8 +475,8 @@ void AlsaAudioSinkElement::ProcessBuffer(const PcmDataBufferSPTR& pcmBuffer)
 			{
 				printf("snd_pcm_writei failed: %s\n", snd_strerror(frames));
 
-				//printf("snd_pcm_recover: handle=%p, err=%ld, silent=1\n", handle, frames);
-				int err = snd_pcm_recover(handle, frames, 1);
+				//printf("snd_pcm_recover: handle=%p, err=%ld, silent=1\n", pcm_handle, frames);
+				int err = snd_pcm_recover(pcm_handle, frames, 1);
 				//printf("snd_pcm_recover: returned err=%d\n", err);
 
 				if (err < 0)
@@ -498,8 +498,8 @@ void AlsaAudioSinkElement::ProcessBuffer(const PcmDataBufferSPTR& pcmBuffer)
 
 	if (doPauseFlag)
 	{
-		//printf("snd_pcm_pause: handle=%p, enable=1\n", handle);
-		snd_pcm_pause(handle, 1);
+		//printf("snd_pcm_pause: handle=%p, enable=1\n", pcm_handle);
+		snd_pcm_pause(pcm_handle, 1);
 		//printf("snd_pcm_pause: returned\n");
 
 		doPauseFlag = false;
@@ -529,10 +529,10 @@ void AlsaAudioSinkElement::Flush()
 {
 	Element::Flush();
 
-	if (handle)
+	if (pcm_handle)
 	{
-		snd_pcm_drop(handle);
-		snd_pcm_prepare(handle);
+		snd_pcm_drop(pcm_handle);
+		snd_pcm_prepare(pcm_handle);
 	}
 }
 
@@ -652,12 +652,12 @@ void AlsaAudioSinkElement::DoWork()
 
 void AlsaAudioSinkElement::Terminating()
 {
-	if (handle)
+	if (pcm_handle)
 	{
-		snd_pcm_drop(handle);
-		snd_pcm_close(handle);
+		snd_pcm_drop(pcm_handle);
+		snd_pcm_close(pcm_handle);
 
-		handle = nullptr;
+		pcm_handle = nullptr;
 	}
 }
 
@@ -665,7 +665,7 @@ void AlsaAudioSinkElement::ChangeState(MediaState oldState, MediaState newState)
 {
 	Element::ChangeState(oldState, newState);
 
-	if (handle)
+	if (pcm_handle)
 	{
 		switch (newState)
 		{
@@ -676,7 +676,7 @@ void AlsaAudioSinkElement::ChangeState(MediaState oldState, MediaState newState)
 				doPauseFlag = false;
 				doResumeFlag = true;
 
-				//int ret = snd_pcm_pause(handle, 0);
+				//int ret = snd_pcm_pause(pcm_handle, 0);
 
 				playPauseMutex.Unlock();
 				break;
@@ -688,7 +688,7 @@ void AlsaAudioSinkElement::ChangeState(MediaState oldState, MediaState newState)
 
 				doPauseFlag = true;
 				doResumeFlag = false;
-				//int ret = snd_pcm_pause(handle, 1);
+				//int ret = snd_pcm_pause(pcm_handle, 1);
 
 				playPauseMutex.Unlock();
 				break;

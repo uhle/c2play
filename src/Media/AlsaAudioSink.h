@@ -43,7 +43,7 @@ class AlsaAudioSinkElement : public Element
 
 	AVCodecID codec_id = AV_CODEC_ID_NONE;
 	unsigned int sampleRate = 0;
-	snd_pcm_t* handle = nullptr;
+	snd_pcm_t* pcm_handle = nullptr;
 	snd_pcm_sframes_t frames;
 	//IClockSinkPtr clockSink;
 	double lastTimeStamp = -1;
