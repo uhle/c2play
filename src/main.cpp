@@ -434,20 +434,25 @@ int main(int argc, char** argv)
 					break;
 
 				case KEY_MUTE:
+				case KEY_M:
 					mediaPlayer->ToggleMuteVolume();
 					break;
 
 				case KEY_VOLUMEDOWN:
+				case KEY_KPSLASH:
 					mediaPlayer->AdjustVolume(-5);
 					break;
 
 				case KEY_VOLUMEUP:
+				case KEY_KPASTERISK:
 					mediaPlayer->AdjustVolume(5);
 					break;
 
 				case KEY_POWER:	// odroid remote
 				case KEY_BACK:
+				case KEY_STOP:
 				case KEY_ESC:
+				case KEY_Q:
 				{
 					isRunning = false;
 				}
@@ -464,6 +469,7 @@ int main(int argc, char** argv)
 				case KEY_ENTER:	// odroid remote
 				case KEY_SPACE:
 				case KEY_PLAYPAUSE:
+				case KEY_P:
 				{
 					if (isPaused)
 					{
@@ -511,7 +517,7 @@ int main(int argc, char** argv)
 					// Backward
 					if (!isPaused)
 					{
-						newTime = currentTime - 30.0; 
+						newTime = currentTime - 10.0;
 						goto seek;
 					}
 					break;
@@ -520,7 +526,7 @@ int main(int argc, char** argv)
 					// Forward
 					if (!isPaused)
 					{
-						newTime = currentTime + 30.0; 		
+						newTime = currentTime + 10.0;
 						goto seek;
 					}
 					break;
@@ -528,7 +534,7 @@ int main(int argc, char** argv)
 				case KEY_UP:
 					if (!isPaused)
 					{
-						newTime = currentTime - 5.0 * 60; 
+						newTime = currentTime - 60.0;
 						goto seek;
 					}
 					break;
@@ -536,7 +542,23 @@ int main(int argc, char** argv)
 				case KEY_DOWN:
 					if (!isPaused)
 					{
-						newTime = currentTime + 5.0 * 60; 
+						newTime = currentTime + 60.0;
+						goto seek;
+					}
+					break;
+
+				case KEY_PAGEUP:
+					if (!isPaused)
+					{
+						newTime = currentTime - 10.0 * 60;
+						goto seek;
+					}
+					break;
+
+				case KEY_PAGEDOWN:
+					if (!isPaused)
+					{
+						newTime = currentTime + 10.0 * 60;
 
 seek:
 						printf("Seeking from %f to %f.\n", currentTime, newTime);
