@@ -42,6 +42,7 @@ class Osd
 	SpriteSPTR barSprite;
 	SpriteSPTR progressSprite;
 	bool isShown = false;
+	bool needsUpdate = false;
 
 public:
 
@@ -54,7 +55,7 @@ public:
 		if (value != duration)
 		{
 			duration = value;
-			//needsRedraw = true;
+			needsUpdate = true;
 		}
 	}
 
@@ -67,10 +68,7 @@ public:
 		if (value != elapsedTime)
 		{
 			elapsedTime = value;
-			//if (showProgress)
-			//{
-			//	needsRedraw = true;
-			//}
+			needsUpdate = true;
 		}
 	}
 
@@ -93,12 +91,12 @@ public:
 	Osd(const CompositorSPTR& compositor);
 
 
-	//void Update(float elapsedTime);
 	//void Draw();
 	//void SwapBuffers();
 
 	void Show();
 	void Hide();
+	void Update();
 };
 
 typedef std::shared_ptr<Osd> OsdSPTR;

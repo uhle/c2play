@@ -91,10 +91,6 @@ Osd::Osd(const CompositorSPTR& compositor)
 }
 
 
-//void Osd::Update(float elapsedTime)
-//{
-//}
-
 //void Osd::Draw()
 //{
 //	if (needsRedraw)
@@ -215,4 +211,17 @@ void Osd::Hide()
 	compositor->RemoveSprites(spriteList);
 
 	isShown = false;
+}
+
+void Osd::Update()
+{
+	if (isShown && needsUpdate && (duration > 0))
+	{
+		Rectangle progressRectangle = barSprite->DestinationRect();
+
+		float percentComplete = elapsedTime / duration;
+		progressRectangle.Width *= percentComplete;
+
+		progressSprite->SetDestinationRect(progressRectangle);
+	}
 }

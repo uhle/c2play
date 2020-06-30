@@ -407,6 +407,7 @@ int main(int argc, char** argv)
 
 	isRunning = true;
 	bool isPaused = false;
+	bool isOsdShown = false;
 	double lastTimeScreenSaverWasReset = mediaPlayer->StartTime();
 
 	while (isRunning)
@@ -466,17 +467,43 @@ int main(int argc, char** argv)
 				{
 					if (isPaused)
 					{
-						osd->Hide();
+						if (!isOsdShown)
+						{
+							osd->Hide();
+						}
+
 						window->SimulateUserActivity();
 						mediaPlayer->SetState(MediaState::Play);
 					}
 					else
 					{
 						mediaPlayer->SetState(MediaState::Pause);
-						osd->Show();
+
+						if (!isOsdShown)
+						{
+							osd->Show();
+						}
 					}
 
 					isPaused = !isPaused;
+				}
+				break;
+
+				case KEY_O:
+				{
+					if (!isPaused)
+					{
+						if (isOsdShown)
+						{
+							osd->Hide();
+						}
+						else
+						{
+							osd->Show();
+						}
+					}
+
+					isOsdShown = !isOsdShown;
 				}
 				break;
 
@@ -533,6 +560,8 @@ seek:
 
 			double elapsedTime = currentTime - mediaPlayer->StartTime();
 			osd->SetElapsedTime(elapsedTime);
+
+			osd->Update();
 
 			if (isFbdev)
 			{
