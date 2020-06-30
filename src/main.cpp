@@ -374,6 +374,7 @@ int main(int argc, char** argv)
 #endif
 
 	window->ProcessMessages();
+	window->InhibitSuspend();
 
 	RenderContextSPTR renderContext = std::make_shared<RenderContext>(window->EglDisplay(),
 		window->Surface(),
@@ -406,6 +407,7 @@ int main(int argc, char** argv)
 
 	isRunning = true;
 	bool isPaused = false;
+	double lastTimeScreenSaverWasReset = mediaPlayer->StartTime();
 
 	while (isRunning)
 	{
@@ -465,6 +467,7 @@ int main(int argc, char** argv)
 					if (isPaused)
 					{
 						osd->Hide();
+						window->SimulateUserActivity();
 						mediaPlayer->SetState(MediaState::Play);
 					}
 					else
@@ -504,14 +507,17 @@ int main(int argc, char** argv)
 					break;
 
 				case KEY_DOWN:
-					newTime = currentTime + 5.0 * 60; 
-
-seek:
 					if (!isPaused)
 					{
+						newTime = currentTime + 5.0 * 60; 
+
+seek:
 						printf("Seeking from %f to %f.\n", currentTime, newTime);
 
 						mediaPlayer->Seek(newTime);
+
+						lastTimeScreenSaverWasReset += newTime - currentTime;
+						currentTime = newTime;
 					}
 					break;
 
@@ -543,12 +549,21 @@ seek:
 			//osd->SwapBuffers();
 		}
 
+		// Simulate user activity every 30 seconds to reset the idle
+		// timer of X screen savers.
+		if (currentTime - lastTimeScreenSaverWasReset > 30.0)
+		{
+			lastTimeScreenSaverWasReset = currentTime;
+			window->SimulateUserActivity();
+		}
+
 		if (mediaPlayer->IsEndOfStream())
 		{
 			if (optionLoop)
 			{
 				mediaPlayer->Seek(0);
 				mediaPlayer->SetState(MediaState::Play);
+				lastTimeScreenSaverWasReset = mediaPlayer->StartTime();
 			}
 			else
 			{
@@ -561,6 +576,8 @@ seek:
 		}
 	}
 
+
+	window->UnInhibitSuspend();
 
 	printf("MAIN: Playback finished.\n");
 

@@ -196,4 +196,16 @@ public:
 	{
 		return true;
 	}
+
+	virtual void SimulateUserActivity() override
+	{
+	}
+
+	virtual void InhibitSuspend() override
+	{
+	}
+
+	virtual void UnInhibitSuspend() override
+	{
+	}
 };

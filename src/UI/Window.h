@@ -43,6 +43,11 @@ public:
 	virtual void WaitForMessage() = 0;
 	virtual bool ProcessMessages() = 0;
 
+	virtual void SimulateUserActivity() = 0;
+
+	virtual void InhibitSuspend() = 0;
+	virtual void UnInhibitSuspend() = 0;
+
 };
 
 typedef std::shared_ptr<WindowBase> WindowSPTR;

@@ -1,6 +1,7 @@
 /*
 *
 * Copyright (C) 2016 OtherCrashOverride@users.noreply.github.com.
+* Copyright (C) 2020 Thomas Uhle <uhle@users.noreply.github.com>.
 * All rights reserved.
 *
 * This program is free software; you can redistribute it and/or modify
@@ -360,6 +361,64 @@ X11AmlWindow::X11AmlWindow()
 	HideMouse();
 #endif
 
+	// Check if XScreenSaver extension is available and the protocol version is 1.1 at least
+	xcb_screensaver_query_version_cookie_t xss_cookie = xcb_screensaver_query_version(connection, 1, 1);
+	xcb_screensaver_query_version_reply_t* xss_reply = xcb_screensaver_query_version_reply(connection, xss_cookie, nullptr);
+
+	if (xss_reply && (xss_reply->server_major_version > 1 ||
+		(xss_reply->server_major_version == 1 && xss_reply->server_minor_version > 0)))
+	{
+		printf("X11Window: XScreenSaver extension detected, protocol version %d.%d\n",
+			xss_reply->server_major_version, xss_reply->server_minor_version);
+		hasXssExtension = true;
+	}
+
+	free(xss_reply);
+
+	// Check if DPMS extension is available and the protocol version is 1.1 at least
+	xcb_dpms_get_version_cookie_t dpms_cookie = xcb_dpms_get_version(connection, 1, 1);
+	xcb_dpms_get_version_reply_t* dpms_reply = xcb_dpms_get_version_reply(connection, dpms_cookie, nullptr);
+
+	if (dpms_reply && (dpms_reply->server_major_version > 1 ||
+		(dpms_reply->server_major_version == 1 && dpms_reply->server_minor_version > 0)))
+	{
+		printf("X11Window: DPMS extension detected, protocol version %d.%d\n",
+			dpms_reply->server_major_version, dpms_reply->server_minor_version);
+
+		xcb_dpms_capable_cookie_t cap_cookie = xcb_dpms_capable(connection);
+		xcb_dpms_capable_reply_t* cap_reply = xcb_dpms_capable_reply(connection, cap_cookie, nullptr);
+		hasDPMSSupport = (cap_reply && cap_reply->capable);
+		free(cap_reply);
+
+		if (hasDPMSSupport)
+		{
+			xcb_dpms_info_cookie_t info_cookie = xcb_dpms_info(connection);
+			xcb_dpms_info_reply_t* info_reply = xcb_dpms_info_reply(connection, info_cookie, nullptr);
+
+			if (info_reply)
+			{
+				wasDPMSEnabled = info_reply->state;
+				free(info_reply);
+			}
+			else
+			{
+				hasDPMSSupport = false;
+			}
+		}
+
+		if (hasDPMSSupport)
+		{
+			printf("X11Window: DPMS is supported and %s.\n", (wasDPMSEnabled) ? "enabled" : "disabled");
+		}
+		else
+		{
+			printf("X11Window: DPMS is unsupported.\n");
+		}
+	}
+
+	free(dpms_reply);
+
+
 	//WriteToFile("/sys/class/graphics/fb0/blank", "0");
 
 	//video_fd = open("/dev/amvideo", O_RDWR);
@@ -479,6 +538,56 @@ bool X11AmlWindow::ProcessMessages()
 	}
 
 	return run;
+}
+
+void X11AmlWindow::SimulateUserActivity()
+{
+	if (hasXssExtension)
+	{
+		xcb_get_input_focus_cookie_t cookie;
+		xcb_get_input_focus_reply_t* reply;
+
+		xcb_screensaver_suspend(connection, true);
+		cookie = xcb_get_input_focus(connection);
+		reply = xcb_get_input_focus_reply(connection, cookie, nullptr);
+		free(reply);
+
+		xcb_screensaver_suspend(connection, false);
+		cookie = xcb_get_input_focus(connection);
+		reply = xcb_get_input_focus_reply(connection, cookie, nullptr);
+		free(reply);
+	}
+}
+
+void X11AmlWindow::InhibitSuspend()
+{
+	if (hasDPMSSupport && wasDPMSEnabled)
+	{
+		printf("X11Window: Disable DPMS.\n");
+		xcb_dpms_disable(connection);
+	}
+}
+
+void X11AmlWindow::UnInhibitSuspend()
+{
+	if (hasDPMSSupport && wasDPMSEnabled)
+	{
+		printf("X11Window: Enable DPMS.\n");
+		xcb_dpms_enable(connection);
+		xcb_flush(connection);
+
+		xcb_dpms_info_cookie_t cookie = xcb_dpms_info(connection);
+		xcb_dpms_info_reply_t* reply = xcb_dpms_info_reply(connection, cookie, nullptr);
+
+		if (reply && (reply->power_level != XCB_DPMS_DPMS_MODE_ON))
+		{
+			printf("X11Window: Switch DPMS mode: ON\n");
+			xcb_dpms_force_level(connection, XCB_DPMS_DPMS_MODE_ON);
+			xcb_flush(connection);
+		}
+
+		free(reply);
+	}
 }
 
 void X11AmlWindow::HideMouse()

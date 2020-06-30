@@ -30,7 +30,7 @@ project "c2play-x11"
    files { "src/**.h", "src/**.cpp" }
    excludes { "src/UI/Fbdev/**" }
    buildoptions { "-std=c++14 -Wall" }
-   linkoptions { "-lavformat -lavcodec -lavutil -lass -lasound -lrt -lpthread -lxcb -lxcb-image -lEGL -lGLESv2" }
+   linkoptions { "-lavformat -lavcodec -lavutil -lass -lasound -lrt -lpthread -lxcb -lxcb-image -lxcb-dpms -lxcb-screensaver -lEGL -lGLESv2" }
    defines { "X11" }
 
    configuration "Debug"

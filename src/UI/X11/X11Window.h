@@ -1,6 +1,7 @@
 /*
 *
 * Copyright (C) 2016 OtherCrashOverride@users.noreply.github.com.
+* Copyright (C) 2020 Thomas Uhle <uhle@users.noreply.github.com>.
 * All rights reserved.
 *
 * This program is free software; you can redistribute it and/or modify
@@ -27,6 +28,8 @@
 
 #include <xcb/xcb.h>
 #include <xcb/xcb_image.h>
+#include <xcb/dpms.h>
+#include <xcb/screensaver.h>
 
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
@@ -45,8 +48,6 @@
 
 
 
-// TODO: Figure out a way to disable screen savers
-
 class X11AmlWindow : public AmlWindow
 {
 	const int DEFAULT_WIDTH = 1280;
@@ -59,6 +60,9 @@ class X11AmlWindow : public AmlWindow
 	int height;
 	xcb_window_t xwin = 0;
 	xcb_atom_t wm_delete_window;
+	bool hasXssExtension = false;
+	bool hasDPMSSupport = false;
+	bool wasDPMSEnabled = false;
 	//int video_fd = -1;
 	EGLDisplay eglDisplay;
 	EGLSurface surface;
@@ -93,6 +97,11 @@ public:
 
 	virtual void WaitForMessage() override;
 	virtual bool ProcessMessages() override;
+
+	virtual void SimulateUserActivity() override;
+
+	virtual void InhibitSuspend() override;
+	virtual void UnInhibitSuspend() override;
 
 	void HideMouse();
 	void UnHideMouse();
