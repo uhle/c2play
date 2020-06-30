@@ -28,7 +28,7 @@ ifeq ($(config),debug)
   CPPFLAGS  += -MMD -MP $(DEFINES) $(INCLUDES)
   CFLAGS    += $(CPPFLAGS) $(ARCH) -g -std=c++14 -Wall
   CXXFLAGS  += $(CFLAGS) 
-  LDFLAGS   += -lavformat -lavcodec -lavutil -lpthread -lasound -lrt -lX11 -lEGL -lGLESv2 -lass
+  LDFLAGS   += -lavformat -lavcodec -lavutil -lass -lasound -lrt -lpthread -lxcb -lxcb-image -lEGL -lGLESv2
   LIBS      += 
   RESFLAGS  += $(DEFINES) $(INCLUDES) 
   LDDEPS    += 
@@ -50,7 +50,7 @@ ifeq ($(config),release)
   CPPFLAGS  += -MMD -MP $(DEFINES) $(INCLUDES)
   CFLAGS    += $(CPPFLAGS) $(ARCH) -O2 -std=c++14 -Wall
   CXXFLAGS  += $(CFLAGS) 
-  LDFLAGS   += -s -lavformat -lavcodec -lavutil -lpthread -lasound -lrt -lX11 -lEGL -lGLESv2 -lass
+  LDFLAGS   += -s -lavformat -lavcodec -lavutil -lass -lasound -lrt -lpthread -lxcb -lxcb-image -lEGL -lGLESv2
   LIBS      += 
   RESFLAGS  += $(DEFINES) $(INCLUDES) 
   LDDEPS    += 

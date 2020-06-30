@@ -12,7 +12,7 @@ project "c2play"
    files { "src/**.h", "src/**.cpp" }
    excludes { "src/UI/X11/**" }
    buildoptions { "-std=c++14 -Wall" }
-   linkoptions { "-lavformat -lavcodec -lavutil -lpthread -lasound -lrt -lEGL -lGLESv2 -lass" }
+   linkoptions { "-lavformat -lavcodec -lavutil -lass -lasound -lrt -lpthread -lEGL -lGLESv2" }
 
    configuration "Debug"
       flags { "Symbols" }
@@ -30,7 +30,7 @@ project "c2play-x11"
    files { "src/**.h", "src/**.cpp" }
    excludes { "src/UI/Fbdev/**" }
    buildoptions { "-std=c++14 -Wall" }
-   linkoptions { "-lavformat -lavcodec -lavutil -lpthread -lasound -lrt -lX11 -lEGL -lGLESv2 -lass" }
+   linkoptions { "-lavformat -lavcodec -lavutil -lass -lasound -lrt -lpthread -lxcb -lxcb-image -lEGL -lGLESv2" }
    defines { "X11" }
 
    configuration "Debug"

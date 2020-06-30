@@ -19,6 +19,9 @@
 #include "Egl.h"
 #include "GL.h"
 
+#include <cstdlib>
+#include <cstdio>
+
 
 //void X11AmlWindow::IntializeEgl()
 //{
@@ -139,130 +142,219 @@
 //}
 
 
+static bool create_xcb_atoms(xcb_connection_t* connection, xcb_atom_t* atoms, const unsigned int atoms_size, const char** names)
+{
+	bool success = true;
+	xcb_intern_atom_cookie_t atom_cookies[atoms_size];
+
+	for (unsigned int i = 0; i < atoms_size; ++i)
+	{
+		atom_cookies[i] = xcb_intern_atom(connection, 0, strlen(names[i]), names[i]);
+	}
+
+	for (unsigned int i = 0; i < atoms_size; ++i)
+	{
+		xcb_generic_error_t* error = nullptr;
+		xcb_intern_atom_reply_t* reply = xcb_intern_atom_reply(connection, atom_cookies[i], &error);
+
+		if ((reply == nullptr) || (error != nullptr))
+		{
+			success = false;
+			free(error);
+		}
+		else
+		{
+			atoms[i] = reply->atom;
+		}
+
+		free(reply);
+	}
+
+	return success;
+}
+
+
 X11AmlWindow::X11AmlWindow()
 	: AmlWindow()
 {
-	XInitThreads();
+	int screen_number = 0;
 
 
-	display = XOpenDisplay(nullptr);
-	if (display == nullptr)
+	connection = xcb_connect(nullptr, &screen_number);
+	if (connection == nullptr)
 	{
-		throw Exception("XOpenDisplay failed.");
+		throw Exception("xcb_connect failed.");
 	}
 
-	width = XDisplayWidth(display, 0);
-	height = XDisplayHeight(display, 0);
+
+	// Screen
+	xcb_screen_iterator_t iter = xcb_setup_roots_iterator(xcb_get_setup(connection));
+	for (int i = 0; iter.rem; ++i, xcb_screen_next(&iter))
+	{
+		if (i == screen_number)
+		{
+			screen = iter.data;
+			break;
+		}
+	}
+
+	if (screen == nullptr)
+	{
+		xcb_disconnect(connection);
+		throw Exception("Failed to get default screen.");
+	}
+
+	width = screen->width_in_pixels;
+	height = screen->height_in_pixels;
 	printf("X11Window: width=%d, height=%d\n", width, height);
 
 
 	// Egl
-	eglDisplay = Egl::Initialize(EGL_PLATFORM_X11_KHR, display);
+	eglDisplay = Egl::Initialize(EGL_PLATFORM_X11_KHR, EGL_DEFAULT_DISPLAY);
 
 	EGLConfig eglConfig = Egl::FindConfig(eglDisplay, 8, 8, 8, 8, 24, 8);
 	if (eglConfig == 0)
+	{
+		xcb_disconnect(connection);
 		throw Exception("Compatible EGL config not found.");
+	}
 
 
 	// Get the native visual id associated with the config
 	EGLint xVisualId;
 	if (!eglGetConfigAttrib(eglDisplay, eglConfig, EGL_NATIVE_VISUAL_ID, &xVisualId))
+	{
+		xcb_disconnect(connection);
 		throw Exception("Failed to get native visual id.");
+	}
 
 
 	// Window
-	root = XRootWindow(display, XDefaultScreen(display));
+	xcb_void_cookie_t cookie;
+	xcb_generic_error_t* error;
 
 
-	XVisualInfo visTemplate;
-	visTemplate.visualid = xVisualId;
-	//visTemplate.depth = 32;	// Alpha required
+	xcb_colormap_t colormap = xcb_generate_id(connection);
 
+	cookie = xcb_create_colormap_checked(connection,
+		XCB_COLORMAP_ALLOC_NONE,
+		colormap,
+		screen->root,
+		xVisualId);
 
-	int num_visuals;
-	visInfoArray = XGetVisualInfo(display,
-		VisualIDMask, //VisualDepthMask,
-		&visTemplate,
-		&num_visuals);
-
-	if (num_visuals < 1 || visInfoArray == nullptr)
+	error = xcb_request_check(connection, cookie);
+	if ((error != nullptr) || xcb_connection_has_error(connection))
 	{
-		throw Exception("XGetVisualInfo failed.");
+		xcb_disconnect(connection);
+		free(error);
+		throw Exception("xcb_create_colormap failed.");
 	}
 
-	XVisualInfo visInfo = visInfoArray[0];
 
 
-	XSetWindowAttributes attr = { 0 };
-	attr.background_pixel = 0;
-	attr.border_pixel = 0;
-	attr.colormap = XCreateColormap(display,
-		root,
-		visInfo.visual,
-		AllocNone);
-	attr.event_mask = (StructureNotifyMask | ExposureMask | KeyPressMask | KeyReleaseMask | PointerMotionMask | ButtonPressMask | ButtonReleaseMask);
+	uint32_t attr[] = {
+		screen->black_pixel,
+		screen->black_pixel,
+		(XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_KEY_RELEASE | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION),
+		colormap };
 
-	unsigned long mask = (CWBackPixel | CWBorderPixel | CWColormap | CWEventMask);
+	uint32_t mask = (XCB_CW_BACK_PIXEL | XCB_CW_BORDER_PIXEL | XCB_CW_EVENT_MASK | XCB_CW_COLORMAP);
 
+	xwin = xcb_generate_id(connection);
 
-	xwin = XCreateWindow(display,
-		root,
+	cookie = xcb_create_window_checked(connection,
+		XCB_COPY_FROM_PARENT, //32,	// Alpha required
+		xwin,
+		screen->root,
 		0,
 		0,
 		DEFAULT_WIDTH, //width,
 		DEFAULT_HEIGHT, //height,
 		0,
-		visInfo.depth,
-		InputOutput,
-		visInfo.visual,
+		XCB_WINDOW_CLASS_INPUT_OUTPUT,
+		xVisualId,
 		mask,
-		&attr);
+		attr);
 
-	if (xwin == 0)
-		throw Exception("XCreateWindow failed.");
+	error = xcb_request_check(connection, cookie);
+	if ((error != nullptr) || xcb_connection_has_error(connection))
+	{
+		xcb_disconnect(connection);
+		free(error);
+		throw Exception("xcb_create_window failed.");
+	}
 
-	printf("X11Window: xwin = %lu\n", xwin);
+	printf("X11Window: xwin = %u\n", xwin);
 
 
-	//XWMHints hints = { 0 };
-	//XSizeHints* hints = XAllocSizeHints();
+	//xcb_icccm_wm_hints_t hints = { 0 };
 	//hints.input = true;
-	//hints.flags = InputHint;
+	//hints.flags = XCB_ICCCM_WM_HINT_INPUT;
 
-	//XSetWMHints(display, xwin, &hints);
+	//xcb_change_property(connection, XCB_PROP_MODE_REPLACE, xwin, XCB_ATOM_WM_HINTS, XCB_ATOM_WM_HINTS, 32, sizeof(hints)/4, &hints);
 
 
 	// Set the window name
-	XStoreName(display, xwin, WINDOW_TITLE);
-	
-	// Show the window
-	XMapRaised(display, xwin);
+	xcb_change_property(connection, XCB_PROP_MODE_REPLACE, xwin, XCB_ATOM_WM_NAME, XCB_ATOM_STRING, 8, strlen(WINDOW_TITLE), WINDOW_TITLE);
 
+	// Show the window
+	cookie = xcb_map_window_checked(connection, xwin);
+
+	error = xcb_request_check(connection, cookie);
+	if ((error != nullptr) || xcb_connection_has_error(connection))
+	{
+		xcb_destroy_window(connection, xwin);
+		xcb_disconnect(connection);
+		free(error);
+		throw Exception("xcb_map_window failed.");
+	}
 
 
 	// Register to be notified when window is closed
-	wm_delete_window = XInternAtom(display, "WM_DELETE_WINDOW", 0);
-	XSetWMProtocols(display, xwin, &wm_delete_window, 1);
+	static const char* wm_protocols_names[] = { "WM_PROTOCOLS", "WM_DELETE_WINDOW" };
+	xcb_atom_t atoms[5] = { 0 };
+	xcb_atom_t& wm_protocols = atoms[0];
+
+	if (!create_xcb_atoms(connection, atoms, 2, wm_protocols_names))
+	{
+		xcb_destroy_window(connection, xwin);
+		xcb_disconnect(connection);
+		throw Exception("xcb_intern_atom failed.");
+	}
+
+	wm_delete_window = atoms[1];
+	xcb_change_property(connection, XCB_PROP_MODE_REPLACE, xwin, wm_protocols, XCB_ATOM_ATOM, 32, 1, &wm_delete_window);
 
 
 #if 1
 	// Fullscreen
-	Atom wm_state = XInternAtom(display, "_NET_WM_STATE", 0);
-	Atom fullscreen = XInternAtom(display, "_NET_WM_STATE_FULLSCREEN", 0);
+	static const char* wm_state_names[] = { "_NET_WM_STATE", "_NET_WM_STATE_FULLSCREEN", "_NET_WM_STATE_ABOVE" };
+	xcb_atom_t& wm_state = atoms[2];
+	xcb_atom_t& fullscreen = atoms[3];
+	xcb_atom_t& above_other_windows = atoms[4];
 
-	XClientMessageEvent xcmev = { 0 };
-	xcmev.type = ClientMessage;
+	if (!create_xcb_atoms(connection, atoms+2, 3, wm_state_names))
+	{
+		xcb_destroy_window(connection, xwin);
+		xcb_disconnect(connection);
+		throw Exception("xcb_intern_atom failed.");
+	}
+
+	xcb_client_message_event_t xcmev = { 0 };
+	xcmev.response_type = XCB_CLIENT_MESSAGE;
 	xcmev.window = xwin;
-	xcmev.message_type = wm_state;
+	xcmev.type = wm_state;
 	xcmev.format = 32;
-	xcmev.data.l[0] = 1;
-	xcmev.data.l[1] = fullscreen;
+	xcmev.data.data32[0] = 1;
+	xcmev.data.data32[1] = fullscreen;
+	xcmev.data.data32[2] = above_other_windows;
+	xcmev.data.data32[3] = 1;
 
-	XSendEvent(display,
-		root,
+	xcb_send_event(connection,
 		0,
-		(SubstructureRedirectMask | SubstructureNotifyMask),
-		(XEvent*)&xcmev);
+		screen->root,
+		(XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY),
+		(char*) &xcmev);
 
 
 	HideMouse();
@@ -323,52 +415,58 @@ X11AmlWindow::~X11AmlWindow()
 	//WriteToFile("/sys/class/video/axis", "0 0 0 0");
 	SetVideoAxis(0, 0, 0, 0);
 
-	XDestroyWindow(display, xwin);
-	XFree(visInfoArray);
-	XCloseDisplay(display);
+	xcb_destroy_window(connection, xwin);
+	xcb_flush(connection);
+	xcb_disconnect(connection);
 }
 
 
 void X11AmlWindow::WaitForMessage()
 {
-	XEvent xev;
-	XPeekEvent(display, &xev);
+	//xcb_generic_event_t* event = xcb_wait_for_event(connection);
+	//free(event);
 }
 
 bool X11AmlWindow::ProcessMessages()
 {
 	bool run = true;
+	xcb_generic_event_t* event;
 
-	// Use XPending to prevent XNextEvent from blocking
-	while (XPending(display) != 0)
+	while ((event = xcb_poll_for_event(connection)))
 	{
-		XEvent xev;
-		XNextEvent(display, &xev);
-
-		switch (xev.type)
+		switch (event->response_type & ~0x80)
 		{
-			case ConfigureNotify:
+			case XCB_CONFIGURE_NOTIFY:
 			{
-				XConfigureEvent* xConfig = (XConfigureEvent*)&xev;
+				xcb_configure_notify_event_t* xcnev = (xcb_configure_notify_event_t*)event;
 
-				int xx;
-				int yy;
-				Window child;
-				XTranslateCoordinates(display, xwin, root,
-					0, 0,
-					&xx,
-					&yy,
-					&child);
+				xcb_generic_error_t* error = nullptr;
+				xcb_translate_coordinates_cookie_t cookie;
+				xcb_translate_coordinates_reply_t* reply;
 
-				SetVideoAxis(xx, yy, xConfig->width, xConfig->height);
+				cookie = xcb_translate_coordinates(connection, xwin, screen->root, 0, 0);
+				reply = xcb_translate_coordinates_reply(connection, cookie, &error);
+
+				if ((reply == nullptr) || (error != nullptr))
+				{
+					xcb_destroy_window(connection, xwin);
+					xcb_disconnect(connection);
+					free(error);
+					free(reply);
+					throw Exception("xcb_translate_coordinates failed.");
+				}
+
+				SetVideoAxis(reply->dst_x, reply->dst_y, xcnev->width, xcnev->height);
+
+				free(reply);
 				break;
 			}
 
-			case ClientMessage:
+			case XCB_CLIENT_MESSAGE:
 			{
-				XClientMessageEvent* xclient = (XClientMessageEvent*)&xev;
+				xcb_client_message_event_t* xcmev = (xcb_client_message_event_t*)event;
 
-				if (xclient->data.l[0] == (long)wm_delete_window)
+				if (xcmev->data.data32[0] == wm_delete_window)
 				{
 					printf("X11Window: Window closed.\n");
 					run = false;
@@ -376,6 +474,8 @@ bool X11AmlWindow::ProcessMessages()
 			}
 			break;
 		}
+
+		free(event);
 	}
 
 	return run;
@@ -383,26 +483,47 @@ bool X11AmlWindow::ProcessMessages()
 
 void X11AmlWindow::HideMouse()
 {
-	static char bitmap[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
-	Pixmap pixmap = XCreateBitmapFromData(display, xwin, bitmap, 8, 8);
+	static uint8_t bitmap[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
-	XColor black = { 0 };
-	Cursor cursor = XCreatePixmapCursor(display,
+	xcb_pixmap_t pixmap = xcb_create_pixmap_from_bitmap_data(connection,
+		xwin,
+		bitmap,
+		8,
+		8,
+		1,
+		screen->black_pixel,
+		screen->black_pixel,
+		nullptr);
+
+	xcb_cursor_t cursor = xcb_generate_id(connection);
+	xcb_void_cookie_t cookie = xcb_create_cursor_checked(connection,
+		cursor,
 		pixmap,
 		pixmap,
-		&black,
-		&black,
+		0, 0, 0,
+		0, 0, 0,
 		0,
 		0);
 
-	XDefineCursor(display, xwin, cursor);
+	xcb_generic_error_t* error = xcb_request_check(connection, cookie);
+	if ((error != nullptr) || xcb_connection_has_error(connection))
+	{
+		xcb_free_pixmap(connection, pixmap);
+		xcb_destroy_window(connection, xwin);
+		xcb_disconnect(connection);
+		free(error);
+		throw Exception("xcb_create_cursor failed.");
+	}
 
-	XFreeCursor(display, cursor);
-	XFreePixmap(display, pixmap);
+	xcb_change_window_attributes(connection, xwin, XCB_CW_CURSOR, &cursor);
+
+	xcb_free_cursor(connection, cursor);
+	xcb_free_pixmap(connection, pixmap);
 }
 
 void X11AmlWindow::UnHideMouse()
 {
-	XUndefineCursor(display, xwin);
+	xcb_cursor_t cursor = XCB_CURSOR_NONE;
+	xcb_change_window_attributes(connection, xwin, XCB_CW_CURSOR, &cursor);
 }
 

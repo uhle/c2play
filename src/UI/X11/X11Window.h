@@ -25,8 +25,8 @@
 #include <cstring>
 #include <string>
 
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
+#include <xcb/xcb.h>
+#include <xcb/xcb_image.h>
 
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
@@ -53,13 +53,12 @@ class X11AmlWindow : public AmlWindow
 	const int DEFAULT_HEIGHT = 720;
 	const char* WINDOW_TITLE = "X11AmlWindow";
 
-	Display* display = nullptr;
+	xcb_connection_t* connection = nullptr;
+	xcb_screen_t* screen = nullptr;
 	int width;
 	int height;
-	XVisualInfo* visInfoArray = nullptr;
-	Window root = 0;
-	Window xwin = 0;
-	Atom wm_delete_window;
+	xcb_window_t xwin = 0;
+	xcb_atom_t wm_delete_window;
 	//int video_fd = -1;
 	EGLDisplay eglDisplay;
 	EGLSurface surface;
@@ -96,6 +95,5 @@ public:
 	virtual bool ProcessMessages() override;
 
 	void HideMouse();
-
 	void UnHideMouse();
 };
