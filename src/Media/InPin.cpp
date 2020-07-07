@@ -36,7 +36,9 @@ void  InPin::WorkThread()
 
 		DoWork();
 
+		waitCondition.Lock();
 		waitCondition.WaitForSignal();
+		waitCondition.Unlock();
 	}
 
 	//printf("InPin: WorkTread exited.\n");
@@ -59,10 +61,14 @@ void  InPin::WorkThread()
 				source->AcceptProcessedBuffer(std::move(buffer));
 			}
 
+			waitCondition.Lock();
+
 			while (filledBuffers.TryPop(&buffer))
 			{
 				source->AcceptProcessedBuffer(std::move(buffer));
 			}
+
+			waitCondition.Unlock();
 		}
 
 		sourceMutex.Unlock();
@@ -92,7 +98,13 @@ void  InPin::WorkThread()
 
 	bool InPin::TryGetFilledBuffer(BufferUPTR* buffer)
 	{
-		return filledBuffers.TryPop(buffer);
+		waitCondition.Lock();
+
+		bool result = filledBuffers.TryPop(buffer);
+
+		waitCondition.Unlock();
+
+		return result;
 	}
 
 	void InPin::PushProcessedBuffer(BufferUPTR&& buffer)
@@ -208,17 +220,20 @@ void  InPin::WorkThread()
 		ElementSPTR parent = Owner().lock();
 
 
+		waitCondition.Lock();
+
 		filledBuffers.Push(std::move(buffer));
+
+		// Wake the work thread
+		waitCondition.Signal();
+
+		waitCondition.Unlock();
 
 
 		if (parent)
 		{
 			parent->Wake();
 		}
-
-
-		// Wake the work thread
-		waitCondition.Signal();
 
 
 		BufferReceived.Invoke(this, EventArgs::Empty());

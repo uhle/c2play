@@ -70,7 +70,6 @@ class OutPin : public Pin
 
 protected:
 
-	void AddAvailableBuffer(BufferUPTR&& buffer);
 	virtual void DoWork();
 
 
@@ -87,8 +86,6 @@ public:
 
 	virtual ~OutPin();
 
-
-	void Wake();
 
 	bool TryGetAvailableBuffer(BufferUPTR* outValue);
 	void SendBuffer(BufferUPTR&& buffer);

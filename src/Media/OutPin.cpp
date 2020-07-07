@@ -35,7 +35,9 @@ void OutPin::WorkThread()
 			}
 		}
 
+		waitCondition.Lock();
 		waitCondition.WaitForSignal();
+		waitCondition.Unlock();
 	}
 
 	//printf("OutPin: WorkTread exited.\n");
@@ -48,24 +50,6 @@ OutPin::OutPin(const ElementWPTR& owner, const PinInfoSPTR& info)
 }
 
 
-void OutPin::AddAvailableBuffer(BufferUPTR&& buffer)
-{
-	if (!buffer)
-		throw ArgumentNullException("OutPin::AddAvailableBuffer: empty buffer");
-
-	ElementSPTR element = Owner().lock();
-	if (buffer->Owner() != element)
-	{
-		throw InvalidOperationException("The buffer being added does not belong to this object.");
-	}
-
-	availableBuffers.Push(std::move(buffer));
-
-	element->Wake();
-
-	//printf("OutPin::AddAvailableBuffer (%s).\n", element->Name().c_str());
-}
-
 void OutPin::DoWork()
 {
 	// Work should not block in the thread
@@ -73,7 +57,13 @@ void OutPin::DoWork()
 
 bool OutPin::TryGetAvailableBuffer(BufferUPTR* outValue)
 {
-	return availableBuffers.TryPop(outValue);
+	waitCondition.Lock();
+
+	bool result = availableBuffers.TryPop(outValue);
+
+	waitCondition.Unlock();
+
+	return result;
 }
 
 void OutPin::SendBuffer(BufferUPTR&& buffer)
@@ -96,9 +86,6 @@ void OutPin::SendBuffer(BufferUPTR&& buffer)
 	}
 	else
 	{
-		//AddAvailableBuffer(std::move(buffer));
-
-		// This is required to generate an event
 		AcceptProcessedBuffer(std::move(buffer));
 	}
 }
@@ -116,12 +103,6 @@ OutPin::~OutPin()
 		OutPinSPTR thisPin = std::static_pointer_cast<OutPin>(shared_from_this());
 		sink->Disconnect(thisPin);
 	}
-}
-
-
-void OutPin::Wake()
-{
-	waitCondition.Signal();
 }
 
 
@@ -163,18 +144,26 @@ void OutPin::AcceptProcessedBuffer(BufferUPTR&& buffer)
 	if (!buffer)
 		throw ArgumentNullException("OutPin::AcceptProcessedBuffer: empty buffer");
 
-	//if (buffer->Owner() != (void*)this)
-	//{
-	//	throw InvalidOperationException("The buffer being returned does not belong to this object.");
-	//}
+	ElementSPTR parent = Owner().lock();
+	if (buffer->Owner() != parent)
+	{
+		throw InvalidOperationException("The buffer being returned does not belong to this object.");
+	}
 
-	//availableBuffers.Push(std::move(buffer));
-	AddAvailableBuffer(std::move(buffer));
+	waitCondition.Lock();
+
+	availableBuffers.Push(std::move(buffer));
 
 	// Wake the work thread
 	waitCondition.Signal();
 
+	waitCondition.Unlock();
+
+	parent->Wake();
+
 	//BufferEventArgs args(std::move(buffer));
 	BufferReturned.Invoke(this, EventArgs::Empty());
+
+	parent->Log("OutPin::AcceptProcessedBuffer (%s).\n", parent->Name().c_str());
 }
 

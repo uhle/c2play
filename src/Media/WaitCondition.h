@@ -40,26 +40,18 @@ public:
 
 	void Signal()
 	{
-		pthread_mutex_lock(&waitMutex);
-
 		flag = true;
 		pthread_cond_broadcast(&waitCondition);
-
-		pthread_mutex_unlock(&waitMutex);
 	}
 
 	void WaitForSignal()
 	{
-		pthread_mutex_lock(&waitMutex);
-
 		while (flag == false)
 		{
 			pthread_cond_wait(&waitCondition, &waitMutex);
 		}
 
 		flag = false;
-
-		pthread_mutex_unlock(&waitMutex);
 	}
 
 	//bool WaitTimeout(double seconds)

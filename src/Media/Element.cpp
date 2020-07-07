@@ -22,63 +22,53 @@
 
 	void Element::SetExecutionState(ExecutionStateEnum newState)
 	{
+		pthread_mutex_lock(&executionWaitMutex);
+
 		ExecutionStateEnum current = executionState;
 
 		if (newState != current)
 		{
+			bool isInvalidOperation = false;
+
 			switch (current)
 			{
 				case ExecutionStateEnum::WaitingForExecute:
-					if (newState != ExecutionStateEnum::Initializing)
-					{
-						throw InvalidOperationException();
-					}
+					isInvalidOperation = (newState != ExecutionStateEnum::Initializing);
 					break;
 
 				case ExecutionStateEnum::Initializing:
-					if (newState != ExecutionStateEnum::Idle)
-					{
-						throw InvalidOperationException();
-					}
+					isInvalidOperation = (newState != ExecutionStateEnum::Idle);
 					break;
 
 				case ExecutionStateEnum::Executing:
-					if (newState != ExecutionStateEnum::Idle &&
-						newState != ExecutionStateEnum::Terminating)
-					{
-						throw InvalidOperationException();
-					}
+					isInvalidOperation = (newState != ExecutionStateEnum::Idle) &&
+						(newState != ExecutionStateEnum::Terminating);
 					break;
 
 				case ExecutionStateEnum::Idle:
-					if (newState != ExecutionStateEnum::Executing &&
-						newState != ExecutionStateEnum::Terminating)
-					{
-						throw InvalidOperationException();
-					}
+					isInvalidOperation = (newState != ExecutionStateEnum::Executing) &&
+						(newState != ExecutionStateEnum::Terminating);
 					break;
 
 				case ExecutionStateEnum::Terminating:
-					if (newState != ExecutionStateEnum::WaitingForExecute)
-					{
-						throw InvalidOperationException();
-					}
+					isInvalidOperation = (newState != ExecutionStateEnum::WaitingForExecute);
 					break;
 
 				default:
 					break;
 			}
 
-			//executionState = newState;
+			if (isInvalidOperation)
+			{
+				pthread_mutex_unlock(&executionWaitMutex);
+				throw InvalidOperationException();
+			}
+
+			executionState = newState;
 		}
 
 		// Signal even if already set
 		//executionStateWaitCondition.Signal();
-
-		pthread_mutex_lock(&executionWaitMutex);
-
-		executionState = newState;
-		//desiredExecutionState = newState;
 
 		if (pthread_cond_broadcast(&executionWaitCondition) != 0)
 		{
@@ -126,38 +116,18 @@
 
 	void Element::State_Executing()
 	{
+		pthread_mutex_lock(&waitMutex);
+
 		// Executing state
 		// state == MediaState::Play
 		//while (desiredExecutionState == ExecutionStateEnum::Executing)
 		while (isRunning)
 		{
-			//playPauseMutex.Lock();
-
-			if (state == MediaState::Play)
-			{
-				if (ExecutionState() != ExecutionStateEnum::Executing)
-				{
-					//printf("Element (%s) InternalWorkThread woke.\n", name.c_str());
-					SetExecutionState(ExecutionStateEnum::Executing);
-				}
-
-				DoWork();
-			}
-
-			//playPauseMutex.Unlock();
-
-
-			if (!isRunning)
-				break;
-
-
-			pthread_mutex_lock(&waitMutex);
-
 			while (canSleep)
 			{
 				if (ExecutionState() != ExecutionStateEnum::Idle)
 				{
-					//printf("Element (%s) InternalWorkThread sleeping.\n", name.c_str());
+					Log("Element (%s) InternalWorkThread sleeping.\n", name.c_str());
 					SetExecutionState(ExecutionStateEnum::Idle);
 				}
 
@@ -166,8 +136,32 @@
 
 			canSleep = true;
 
+
+			if (!isRunning)
+				break;
+
+
 			pthread_mutex_unlock(&waitMutex);
+
+			//playPauseMutex.Lock();
+
+			if (State() == MediaState::Play)
+			{
+				if (ExecutionState() != ExecutionStateEnum::Executing)
+				{
+					Log("Element (%s) InternalWorkThread woke.\n", name.c_str());
+					SetExecutionState(ExecutionStateEnum::Executing);
+				}
+
+				DoWork();
+			}
+
+			//playPauseMutex.Unlock();
+
+			pthread_mutex_lock(&waitMutex);
 		}
+
+		pthread_mutex_unlock(&waitMutex);
 	}
 
 
@@ -196,7 +190,7 @@
 
 				if (executionState == ExecutionStateEnum::Executing)
 				{
-					//printf("Element (%s) InternalWorkThread sleeping.\n", name.c_str());
+					Log("Element (%s) InternalWorkThread sleeping.\n", name.c_str());
 
 					while (canSleep)
 					{
@@ -205,7 +199,7 @@
 
 					canSleep = true;
 
-					//printf("Element (%s) InternalWorkThread woke.\n", name.c_str());
+					Log("Element (%s) InternalWorkThread woke.\n", name.c_str());
 				}
 
 				pthread_mutex_unlock(&waitMutex);
@@ -218,7 +212,7 @@
 
 			if (executionState == ExecutionStateEnum::Idle)
 			{
-				//printf("Element %s Idling\n", name.c_str());
+				Log("Element %s Idling\n", name.c_str());
 
 				Idling();
 
@@ -230,7 +224,7 @@
 
 				Idled();
 
-				//printf("Element %s resumed from Idle\n", name.c_str());
+				Log("Element %s resumed from Idle\n", name.c_str());
 			}
 
 			pthread_mutex_unlock(&executionWaitMutex);
@@ -248,14 +242,14 @@
 
 		//while (true)
 		//{
-		//	printf("Element (%s) InternalWorkThread - Idle\n", name.c_str());
+		//	Log("Element (%s) InternalWorkThread - Idle\n", name.c_str());
 		//	SetExecutionState(ExecutionStateEnum::Idle);
 		//	State_Idle();
 
 		//	if (desiredExecutionState == ExecutionStateEnum::Terminating)
 		//		break;
 
-		//	printf("Element (%s) InternalWorkThread - Executing\n", name.c_str());
+		//	Log("Element (%s) InternalWorkThread - Executing\n", name.c_str());
 		//	SetExecutionState(ExecutionStateEnum::Executing);
 		//	State_Executing();
 
@@ -268,13 +262,13 @@
 		State_Executing();
 
 
-		printf("Element (%s) InternalWorkThread - Terminating\n", name.c_str());
+		Log("Element (%s) InternalWorkThread - Terminating\n", name.c_str());
 		SetExecutionState(ExecutionStateEnum::Terminating);
 		Terminating();
 
 		SetExecutionState(ExecutionStateEnum::WaitingForExecute);
 
-		printf("Element (%s) InternalWorkThread exited.\n", name.c_str());
+		Log("Element (%s) InternalWorkThread exited.\n", name.c_str());
 	}
 
 
@@ -362,7 +356,7 @@
 
 	Element::~Element()
 	{
-		printf("Element %s destructed.\n", name.c_str());
+		Log("Element %s destructed.\n", name.c_str());
 	}
 
 
@@ -412,18 +406,27 @@
 
 		Flush();
 
+		pthread_mutex_lock(&waitMutex);
+
+		canSleep = false;
 		isRunning = false;
-		Wake();
+
+		if (pthread_cond_broadcast(&waitCondition) != 0)
+		{
+			throw Exception("Element::Terminate - pthread_cond_broadcast failed.");
+		}
+
+		pthread_mutex_unlock(&waitMutex);
 
 		WaitForExecutionState(ExecutionStateEnum::WaitingForExecute);
 
 
 		//thread.Cancel();
 
-		printf("Element (%s) thread.Join().\n", name.c_str());
+		Log("Element (%s) thread.Join().\n", name.c_str());
 		thread.Join();
 
-		printf("Element (%s) Terminate.\n", name.c_str());
+		Log("Element (%s) Terminate.\n", name.c_str());
 	}
 
 
@@ -463,7 +466,7 @@
 
 		Wake();
 
-		printf("Element (%s) ChangeState oldState=%d newState=%d.\n", name.c_str(), (int)oldState, (int)newState);
+		Log("Element (%s) ChangeState oldState=%d newState=%d.\n", name.c_str(), (int)oldState, (int)newState);
 	}
 
 
@@ -504,7 +507,7 @@
 		outputs.Flush();
 
 
-		printf("Element (%s) Flush exited.\n", name.c_str());
+		Log("Element (%s) Flush exited.\n", name.c_str());
 	}
 
 	// DEBUG
