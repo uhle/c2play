@@ -16,14 +16,13 @@
 
 #pragma once
 
-
+#include <atomic>
 #include <pthread.h>
 #include <sys/time.h>
 
 #include "Codec.h"
 #include "InPin.h"
 #include "OutPin.h"
-#include "WaitCondition.h"
 
 
 // Push model
@@ -68,15 +67,16 @@ enum class ExecutionStateEnum
 class Element : public std::enable_shared_from_this<Element>
 {
 	Thread thread = Thread(std::function<void()>(std::bind(&Element::InternalWorkThread, this)));
-	MediaState state = MediaState::Pause;
 	InPinCollection inputs;
 	OutPinCollection outputs;
-	ExecutionStateEnum executionState = ExecutionStateEnum::WaitingForExecute;
+	std::atomic<bool> isRunning;
+	std::atomic<MediaState> state;
+	std::atomic<ExecutionStateEnum> executionState;
 	//ExecutionStateEnum desiredExecutionState = ExecutionStateEnum::WaitingForExecute;
 
 	pthread_cond_t waitCondition = PTHREAD_COND_INITIALIZER;
 	pthread_mutex_t waitMutex = PTHREAD_MUTEX_INITIALIZER;
-	bool canSleep = true;
+	std::atomic_flag canSleep = ATOMIC_FLAG_INIT;
 
 	std::string name = "Element";
 
@@ -84,7 +84,6 @@ class Element : public std::enable_shared_from_this<Element>
 	pthread_mutex_t executionWaitMutex = PTHREAD_MUTEX_INITIALIZER;
 
 	bool logEnabled = false;
-	bool isRunning = false;
 
 
 
@@ -95,10 +94,7 @@ class Element : public std::enable_shared_from_this<Element>
 
 protected:
 
-	bool IsRunning() const
-	{
-		return isRunning;
-	}
+	bool IsRunning() const;
 
 
 

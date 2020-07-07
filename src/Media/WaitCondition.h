@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <atomic>
 #include <pthread.h>
 
 
@@ -23,10 +24,15 @@ class WaitCondition
 {
 	pthread_cond_t waitCondition = PTHREAD_COND_INITIALIZER;
 	pthread_mutex_t waitMutex = PTHREAD_MUTEX_INITIALIZER;
-	bool flag = false;
+	std::atomic_flag flag = ATOMIC_FLAG_INIT;
 
 
 public:
+
+	WaitCondition()
+	{
+		flag.test_and_set(std::memory_order_relaxed);
+	}
 
 	void Lock()
 	{
@@ -40,18 +46,16 @@ public:
 
 	void Signal()
 	{
-		flag = true;
+		flag.clear(std::memory_order_release);
 		pthread_cond_broadcast(&waitCondition);
 	}
 
 	void WaitForSignal()
 	{
-		while (flag == false)
+		while (flag.test_and_set(std::memory_order_acquire))
 		{
 			pthread_cond_wait(&waitCondition, &waitMutex);
 		}
-
-		flag = false;
 	}
 
 	//bool WaitTimeout(double seconds)

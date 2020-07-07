@@ -24,9 +24,9 @@
 	{
 		pthread_mutex_lock(&executionWaitMutex);
 
-		ExecutionStateEnum current = executionState;
+		ExecutionStateEnum current = ExecutionState();
 
-		if (newState != current)
+		while (newState != current)
 		{
 			bool isInvalidOperation = false;
 
@@ -64,7 +64,10 @@
 				throw InvalidOperationException();
 			}
 
-			executionState = newState;
+			if (executionState.compare_exchange_weak(current, newState, std::memory_order_acq_rel))
+			{
+				break;
+			}
 		}
 
 		// Signal even if already set
@@ -82,10 +85,15 @@
 		Log("Element: %s Set ExecutionState=%d\n", name.c_str(), (int)newState);
 	}
 
+	bool Element::IsRunning() const
+	{
+		return isRunning.load(std::memory_order_acquire);
+	}
 
 
 
 	Element::Element()
+		: isRunning(false), state(MediaState::Pause), executionState(ExecutionStateEnum::WaitingForExecute)
 	{
 	}
 
@@ -121,9 +129,9 @@
 		// Executing state
 		// state == MediaState::Play
 		//while (desiredExecutionState == ExecutionStateEnum::Executing)
-		while (isRunning)
+		while (IsRunning())
 		{
-			while (canSleep)
+			while (canSleep.test_and_set(std::memory_order_acquire))
 			{
 				if (ExecutionState() != ExecutionStateEnum::Idle)
 				{
@@ -134,10 +142,7 @@
 				pthread_cond_wait(&waitCondition, &waitMutex);
 			}
 
-			canSleep = true;
-
-
-			if (!isRunning)
+			if (!IsRunning())
 				break;
 
 
@@ -178,26 +183,26 @@
 		/*SetExecutionState(ExecutionStateEnum::Idle);*/
 
 #if 0
+		ExecutionStateEnum executionState = ExecutionState();
+
 		while (executionState == ExecutionStateEnum::Idle ||
 			executionState == ExecutionStateEnum::Executing)
 		{
 			// Executing state
-			while (executionState == ExecutionStateEnum::Executing)
+			while (ExecutionState() == ExecutionStateEnum::Executing)
 			{
 				DoWork();
 
 				pthread_mutex_lock(&waitMutex);
 
-				if (executionState == ExecutionStateEnum::Executing)
+				if (ExecutionState() == ExecutionStateEnum::Executing)
 				{
 					Log("Element (%s) InternalWorkThread sleeping.\n", name.c_str());
 
-					while (canSleep)
+					while (canSleep.test_and_set(std::memory_order_acquire))
 					{
 						pthread_cond_wait(&waitCondition, &waitMutex);
 					}
-
-					canSleep = true;
 
 					Log("Element (%s) InternalWorkThread woke.\n", name.c_str());
 				}
@@ -210,13 +215,13 @@
 			// Idle State
 			pthread_mutex_lock(&executionWaitMutex);
 
-			if (executionState == ExecutionStateEnum::Idle)
+			if (ExecutionState() == ExecutionStateEnum::Idle)
 			{
 				Log("Element %s Idling\n", name.c_str());
 
 				Idling();
 
-				while (executionState == ExecutionStateEnum::Idle)
+				while (ExecutionState() == ExecutionStateEnum::Idle)
 				{
 					//executionStateWaitCondition.WaitForSignal();
 					pthread_cond_wait(&executionWaitCondition, &executionWaitMutex);
@@ -230,6 +235,7 @@
 			pthread_mutex_unlock(&executionWaitMutex);
 
 
+			executionState = ExecutionState();
 		}
 
 
@@ -303,16 +309,7 @@
 
 	ExecutionStateEnum Element::ExecutionState() const
 	{
-		ExecutionStateEnum result;
-
-		// Probably not necessary to lock since
-		// the read should be atomic at the hardware
-		// level.
-		//pthread_mutex_lock(&waitMutex);
-		result = executionState;
-		//pthread_mutex_unlock(&waitMutex);
-
-		return result;
+		return executionState.load(std::memory_order_acquire);
 	}
 
 	bool Element::IsExecuting() const
@@ -342,10 +339,12 @@
 
 	MediaState Element::State() const
 	{
-		return state;
+		return state.load(std::memory_order_acquire);
 	}
 	void Element::SetState(MediaState value)
 	{
+		MediaState state = State();
+
 		if (state != value)
 		{
 			ChangeState(state, value);
@@ -363,13 +362,13 @@
 
 	void Element::Execute()
 	{
-		if (executionState != ExecutionStateEnum::WaitingForExecute)
+		if (ExecutionState() != ExecutionStateEnum::WaitingForExecute)
 		{
 			throw InvalidOperationException();
 		}
 
 
-		isRunning = true;
+		isRunning.store(true, std::memory_order_release);
 		thread.Start();
 
 
@@ -380,7 +379,7 @@
 	{
 		pthread_mutex_lock(&waitMutex);
 
-		canSleep = false;
+		canSleep.clear(std::memory_order_release);
 
 		//pthread_cond_signal(&waitCondition);
 		if (pthread_cond_broadcast(&waitCondition) != 0)
@@ -395,6 +394,8 @@
 
 	void Element::Terminate()
 	{
+		ExecutionStateEnum executionState = ExecutionState();
+
 		if (executionState != ExecutionStateEnum::Executing &&
 			executionState != ExecutionStateEnum::Idle)
 		{
@@ -408,8 +409,8 @@
 
 		pthread_mutex_lock(&waitMutex);
 
-		canSleep = false;
-		isRunning = false;
+		canSleep.clear(std::memory_order_release);
+		isRunning.store(false, std::memory_order_release);
 
 		if (pthread_cond_broadcast(&waitCondition) != 0)
 		{
@@ -434,7 +435,7 @@
 	{
 		//playPauseMutex.Lock();
 
-		state = newState;
+		while (!state.compare_exchange_weak(oldState, newState, std::memory_order_acq_rel));
 
 		//playPauseMutex.Unlock();
 
@@ -464,16 +465,22 @@
 		//	throw InvalidOperationException();
 		//}
 
-		Wake();
+		// Check the result of the atomic compare-exchange operation.
+		// Just wake up if state has really changed.
+		if (oldState != newState)
+		{
+			Wake();
 
-		Log("Element (%s) ChangeState oldState=%d newState=%d.\n", name.c_str(), (int)oldState, (int)newState);
+			Log("Element (%s) ChangeState oldState=%d newState=%d.\n", name.c_str(), (int)oldState, (int)newState);
+		}
 	}
 
 
 
 	void Element::WaitForExecutionState(ExecutionStateEnum state)
 	{
-		//while (executionState != state)
+		//ExecutionStateEnum executionState;
+		//while ((executionState = ExecutionState()) != state)
 		//{
 		//printf("Element %s: WaitForExecutionState - executionState=%d, waitingFor=%d\n",
 		//	name.c_str(), (int)executionState, (int)state);
@@ -485,7 +492,7 @@
 
 		pthread_mutex_lock(&executionWaitMutex);
 
-		while (executionState != state)
+		while (ExecutionState() != state)
 		{
 			pthread_cond_wait(&executionWaitCondition, &executionWaitMutex);
 		}
