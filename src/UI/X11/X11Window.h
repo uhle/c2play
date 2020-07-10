@@ -37,6 +37,8 @@
 #include "Exception.h"
 #include "AmlWindow.h"
 
+#include "DBusInhibitProxiesWorker.h"
+
 
 // from include/linux/amlogic/amports/amstream.h
 //#define _A_M 'S'
@@ -63,6 +65,7 @@ class X11AmlWindow : public AmlWindow
 	bool hasXssExtension = false;
 	bool hasDPMSSupport = false;
 	bool wasDPMSEnabled = false;
+	DBusInhibitProxiesWorker* dbusWorker = nullptr;
 	//int video_fd = -1;
 	EGLDisplay eglDisplay;
 	EGLSurface surface;

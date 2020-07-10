@@ -2,7 +2,7 @@ Install dependencies:
 	sudo apt install libasound2-dev libavformat-dev libass-dev libegl-dev libgles-dev
 
 Additional dependencies for X11:
-	sudo apt install libxcb1-dev libxcb-image0-dev libxcb-dpms0-dev libxcb-screensaver0-dev
+	sudo apt install libxcb1-dev libxcb-image0-dev libxcb-dpms0-dev libxcb-screensaver0-dev libdbus-c++-dev
 
 Compile:
 	make c2play -j4

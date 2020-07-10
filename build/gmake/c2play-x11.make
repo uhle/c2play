@@ -24,11 +24,11 @@ ifeq ($(config),debug)
   TARGETDIR  = ../..
   TARGET     = $(TARGETDIR)/c2play-x11
   DEFINES   += -DX11 -DDEBUG
-  INCLUDES  += -I../../src/Media -I../../src/UI -I../../src/UI/X11
+  INCLUDES  += -I../../src/Media -I../../src/UI -I../../src/UI/X11 -I/usr/include/dbus-c++-1
   CPPFLAGS  += -MMD -MP $(DEFINES) $(INCLUDES)
   CFLAGS    += $(CPPFLAGS) $(ARCH) -g -std=c++14 -Wall
   CXXFLAGS  += $(CFLAGS) 
-  LDFLAGS   += -lavformat -lavcodec -lavutil -lass -lasound -lrt -lpthread -lxcb -lxcb-image -lxcb-dpms -lxcb-screensaver -lEGL -lGLESv2
+  LDFLAGS   += -lavformat -lavcodec -lavutil -lass -lasound -lrt -lpthread -lxcb -lxcb-image -lxcb-dpms -lxcb-screensaver -lEGL -lGLESv2 -ldbus-c++-1
   LIBS      += 
   RESFLAGS  += $(DEFINES) $(INCLUDES) 
   LDDEPS    += 
@@ -46,11 +46,11 @@ ifeq ($(config),release)
   TARGETDIR  = ../..
   TARGET     = $(TARGETDIR)/c2play-x11
   DEFINES   += -DX11
-  INCLUDES  += -I../../src/Media -I../../src/UI -I../../src/UI/X11
+  INCLUDES  += -I../../src/Media -I../../src/UI -I../../src/UI/X11 -I/usr/include/dbus-c++-1
   CPPFLAGS  += -MMD -MP $(DEFINES) $(INCLUDES)
   CFLAGS    += $(CPPFLAGS) $(ARCH) -O2 -std=c++14 -Wall
   CXXFLAGS  += $(CFLAGS) 
-  LDFLAGS   += -s -lavformat -lavcodec -lavutil -lass -lasound -lrt -lpthread -lxcb -lxcb-image -lxcb-dpms -lxcb-screensaver -lEGL -lGLESv2
+  LDFLAGS   += -s -lavformat -lavcodec -lavutil -lass -lasound -lrt -lpthread -lxcb -lxcb-image -lxcb-dpms -lxcb-screensaver -lEGL -lGLESv2 -ldbus-c++-1
   LIBS      += 
   RESFLAGS  += $(DEFINES) $(INCLUDES) 
   LDDEPS    += 
@@ -99,6 +99,8 @@ OBJECTS := \
 	$(OBJDIR)/Egl.o \
 	$(OBJDIR)/Texture2D.o \
 	$(OBJDIR)/X11Window.o \
+	$(OBJDIR)/DBusInhibitProxy.o \
+	$(OBJDIR)/DBusInhibitProxiesWorker.o \
 
 RESOURCES := \
 
@@ -262,6 +264,12 @@ $(OBJDIR)/Texture2D.o: ../../src/UI/Texture2D.cpp
 	@echo $(notdir $<)
 	$(SILENT) $(CXX) $(CXXFLAGS) -o "$@" -c "$<"
 $(OBJDIR)/X11Window.o: ../../src/UI/X11/X11Window.cpp
+	@echo $(notdir $<)
+	$(SILENT) $(CXX) $(CXXFLAGS) -o "$@" -c "$<"
+$(OBJDIR)/DBusInhibitProxy.o: ../../src/UI/X11/DBusInhibitProxy.cpp
+	@echo $(notdir $<)
+	$(SILENT) $(CXX) $(CXXFLAGS) -o "$@" -c "$<"
+$(OBJDIR)/DBusInhibitProxiesWorker.o: ../../src/UI/X11/DBusInhibitProxiesWorker.cpp
 	@echo $(notdir $<)
 	$(SILENT) $(CXX) $(CXXFLAGS) -o "$@" -c "$<"
 

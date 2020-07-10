@@ -467,6 +467,10 @@ X11AmlWindow::X11AmlWindow()
 	{
 		Egl::CheckError();
 	}
+
+
+	// Create separate worker thread for D-Bus communication
+	dbusWorker = new DBusInhibitProxiesWorker(xwin);
 }
 
 X11AmlWindow::~X11AmlWindow()
@@ -477,6 +481,8 @@ X11AmlWindow::~X11AmlWindow()
 	xcb_destroy_window(connection, xwin);
 	xcb_flush(connection);
 	xcb_disconnect(connection);
+
+	delete dbusWorker;
 }
 
 
@@ -561,6 +567,11 @@ void X11AmlWindow::SimulateUserActivity()
 
 void X11AmlWindow::InhibitSuspend()
 {
+	if (dbusWorker)
+	{
+		dbusWorker->SendInhibitMessage();
+	}
+
 	if (hasDPMSSupport && wasDPMSEnabled)
 	{
 		printf("X11Window: Disable DPMS.\n");
@@ -570,6 +581,11 @@ void X11AmlWindow::InhibitSuspend()
 
 void X11AmlWindow::UnInhibitSuspend()
 {
+	if (dbusWorker)
+	{
+		dbusWorker->SendUnInhibitMessage();
+	}
+
 	if (hasDPMSSupport && wasDPMSEnabled)
 	{
 		printf("X11Window: Enable DPMS.\n");
